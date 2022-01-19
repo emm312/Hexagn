@@ -1,0 +1,5 @@
+// test comment
+
+int a = 5;
+
+// interpreter output: int a = 5; 

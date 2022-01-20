@@ -3,6 +3,6 @@
 
 #include <string>
 
-void interpreter(std::string inputFileName, std::string outputFileName);
+void compiler(std::string inputFileName, std::string outputFileName);
 
 #endif // INTERPRETER_H

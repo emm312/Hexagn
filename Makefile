@@ -1,4 +1,4 @@
-SOURCES = ${wildcard src/*.cpp src/interpreter/*cpp}
+SOURCES = ${wildcard src/*.cpp src/*/*.cpp}
 OBJS = ${SOURCES:.cpp=.o}
 
 CXX = g++		# Change to clang++ if using clang

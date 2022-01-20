@@ -12,10 +12,13 @@ This is a collaboration project between
 
 ## About
 
-Hexagn is designed to be a simple interpreted language, as well to be able to compile to other language ([URCL](#urcl)).
+Hexagn is designed to be a simple language that is compiled to [URCL](#urcl)
 
 The syntax of Hexagn is designed to be simple so anyone could learn and understand the syntax easily without any troubles.
-It is a [statically](#difference-between-statically-and-dynamically-typed) typed language.
+It is a statically typed language.
+
+The URCL code that Hexagn files are compiled to use stack-based allocations for return values and arguments, which means
+that the user can access function arguments using the stack pointer, and set/get return values using push and pop respectively.
 
 ## Features status
 
@@ -26,9 +29,10 @@ It is a [statically](#difference-between-statically-and-dynamically-typed) typed
 
 # Installation
 
-## Requirement
+## Requirements
 
 - G++ (or Clang++ on MacOS)
+- Make
 
 ## Windows
 
@@ -65,8 +69,8 @@ Click on "Download ZIP" and then extract the zip.
 After cloning the repository, go to the directory by using <b>cd [directory]</b> or access it via your file manager and opening in the terminal. Run this command when you are in the directory:
 
 ```bash
-sudo ./macos.sh homebrew   # Run this only if you installed using homebrew
-sudo ./macos.sh macports   # Run this only if you installed using macports
+make CXX=clang++   # Run this only if you installed using homebrew
+make   # Run this only if you installed using macports
 ```
 
 ## Linux
@@ -107,7 +111,7 @@ Click on "Download ZIP" and then extract the zip.
 After cloning the repository, go to the directory by using <b>cd [directory]</b> or access it via your file manager and opening in the terminal. Run this command when you are in the directory:
 
 ```bash
-sudo ./linux.sh
+make
 ```
 
 ## Verifying installation
@@ -121,19 +125,6 @@ hexagn --version
 # Resources
 
 Resources used for the development of this programming language.
-
-## Difference between statically and dynamically typed
-
-[Link to an article about this](https://pythonistaplanet.com/difference-between-statically-and-dynamically-typed-languages/)
-
-In short, Statically Typed languages are where the datatype of the variable (int, string etc.)
-is able to be known at compile-time i.e. type of the variable is written in the code.
-
-Dynamically Typed languages have the datatype of the variable known at runtime instead,
-such that the type of the variable does not need to be written in the code itself.
-
-Some exceptions are languages that use type inference that determines the type of the variable by its definition.
-These are still Statically Typed languages.
 
 ## URCL
 URCL stands for Universal Reduced (or Redstone) Computer Language,

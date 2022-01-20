@@ -1,7 +1,8 @@
 #include <iostream>
+#include <string>
 
 #include <util.h>
-#include <interpreter/interpreter.h>
+#include <compiler/compiler.h>
 
 int main(int argc, char* argv[])
 {
@@ -16,16 +17,29 @@ int main(int argc, char* argv[])
     std::string inputFileName = argv[1];
     std::string outputFileName;
 
-    if ((index = indexOf(argv, "-urcl", argc)) != -1)
-        try
-        {
-            outputFileName = argv[index + 1];
-        }
-        catch (const std::out_of_range& e)
+    if ((index = indexOf(argv, "-o", argc)) != -1)
+    {
+        if (index == argc - 1)
         {
             std::cerr << "No output filename provided\n";
             return -1;
         }
+
+        std::string fileName = argv[index + 1];
+        
+        if (fileName.starts_with('-'))
+        {
+            std::cerr << "Expected output filename, instead got compiler flag\n";
+            return -1;
+        }
+
+        outputFileName = fileName;
+    }
+    else
+        outputFileName = "out.urcl";
     
-    interpreter(inputFileName, outputFileName);
+    // std::cerr << "No output filename provided\n";
+    // return -1;
+    
+    compiler(inputFileName, outputFileName);
 }

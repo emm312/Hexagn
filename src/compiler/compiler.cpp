@@ -13,7 +13,10 @@ void compiler(std::string inputFileName, std::string outputFileName)
 {
     std::string src;                                            // Storing entire source
 
-    std::ifstream inputFileStream(inputFileName);               // File stream to read input file
+    // File stream to raed input file
+    std::ifstream inputFileStream(inputFileName);
+
+    // File stream to write to output file
     std::ofstream outputFileStream(outputFileName);
     
     // Get all non-comment tokens into src
@@ -31,22 +34,13 @@ void compiler(std::string inputFileName, std::string outputFileName)
         }
     }
 
-    std::cout << src << '\n';
-}
+    // We dont need the input file stream anymore, so close it
+    inputFileStream.close();
 
-std::vector<std::string> split(std::string str, char sep)
-{
-    std::stringstream stream(str);
-    std::string _str;
-    std::vector<std::string> res;
+    auto toks = split(src, ' ');
 
-    while (std::getline(stream, _str, sep))
-    {
-        if (_str == "")
-            continue;
-
-        res.push_back(_str);
-    }
-
-    return res;
+    // Temporary print thing
+    for (auto tok: toks)
+        std::cout << tok << ' ';
+    std::cout << '\n';
 }

@@ -1,4 +1,6 @@
 #include <string>
+#include <vector>
+#include <sstream>
 
 #include <util.h>
 
@@ -12,4 +14,21 @@ int indexOf(char* argv[], std::string element, int size)
     }
 
     return -1;
+}
+
+std::vector<std::string> split(std::string str, char sep)
+{
+    std::stringstream stream(str);
+    std::string _str;
+    std::vector<std::string> res;
+
+    while (std::getline(stream, _str, sep))
+    {
+        if (_str == "")
+            continue;
+
+        res.push_back(_str);
+    }
+
+    return res;
 }

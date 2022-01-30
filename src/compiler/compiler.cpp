@@ -13,7 +13,7 @@ void compiler(std::string inputFileName, std::string outputFileName)
 {
     std::string src;                                            // Storing entire source
 
-    // File stream to raed input file
+    // File stream to read input file  :  fixed typo for raed, :)
     std::ifstream inputFileStream(inputFileName);
 
     // File stream to write to output file
@@ -27,7 +27,7 @@ void compiler(std::string inputFileName, std::string outputFileName)
         
         for (auto tok: _toks)
         {
-            if (tok.starts_with("//"))
+            if (doesStartsWith(tok, "//"))
                 break;
             
             src += tok + ' ';

@@ -1,6 +1,6 @@
 # Hexagn - A simple programming language
 This is a collaboration project between
-[NotAlternate](https://github.com/NotAlternate/), [GameBuilder202](https://github.com/GameBuilder202/) and [emm312](https://github.com/emm312)
+[NotAlternate](https://github.com/NotAlternate/), [GameBuilder202](https://github.com/GameBuilder202/)
 
 ## Index
 - [About](#about)
@@ -20,10 +20,13 @@ It is a statically typed language.
 The URCL code that Hexagn files are compiled to use stack-based allocations for return values and arguments, which means
 that the user can access function arguments using the stack pointer, and set/get return values using push and pop respectively.
 
+[Website for Hexagn](https://notalternate.github.io/hexagn/home.html)<br>
+[Documentation](https://notalternate.github.io/hexagn/documentation/main.html)
+
 ## Features status
 
-- [X] Interpreted
 - [ ] Compiled to URCL
+- [ ] Built-in URCL emulator
 
 <i>These features can take a while to be done, please be patient :)</i>
 
@@ -62,9 +65,13 @@ After installing the required packages, clone this repository:
 git clone https://github.com/NotAlternate/Hexagn
 ```
 ### Via website:
-![Cloning repository via website](https://github.com/NotAlternate/Hexagn/png/install.png)
+<br>
+
+![Cloning repository via website](img/repo-install.png)
 
 Click on "Download ZIP" and then extract the zip.
+### Via link:
+[Link to copy repository](https://github.com/NotAlternate/Hexagn.git)
 
 After cloning the repository, go to the directory by using <b>cd [directory]</b> or access it via your file manager and opening in the terminal. Run this command when you are in the directory:
 
@@ -77,25 +84,38 @@ make   # Run this only if you installed using macports
 
 To install the required packages, run
 
-### Debian, Ubuntu, Kali, etc
+### APT - Debian, Ubuntu, Kali, etc
 
 ```bash
 sudo apt upgrade
 sudo apt-get install g++    # G++ (if it is not pre-installed)
 ```
 
-### Fedora, RHEL, CentOS, OpenSUSE, etc
+### DNF - Fedora, RHEL, CentOS, OpenSUSE, etc
 
 ```bash
 sudo dnf upgrade
 sudo dnf install gcc-c++   # G++ (if it is not pre-installed)
 ```
 
-### Arch, Manjaro, etc
+### YUM - Fedora, RHEL, CentOS, OpenSUSE, etc
+
+```bash
+sudo yum upgrade
+sudo yum install gcc-c++   # G++ (if it is not pre-installed)
+```
+
+### PACMAN - Arch, Manjaro, etc
 
 ```bash
 sudo pacman -Syu
 sudo pacman -Sy g++       # G++ (if it is not pre-installed)
+```
+### APK - Alpine
+
+```bash
+sudo apk upgrade
+sudo apk add g++
 ```
 
 After installing the required packages, clone this repository:
@@ -103,10 +123,14 @@ After installing the required packages, clone this repository:
 ```bash
 git clone https://github.com/NotAlternate/Hexagn
 ```
-### Via website: 
-![Cloning repository via website](https://github.com/NotAlternate/Hexagn/png/install.png)
+### Via website:
+<br>
+
+![Cloning repository via website](img/repo-install.png)
 
 Click on "Download ZIP" and then extract the zip.
+### Via link:
+[Link to copy repository](https://github.com/NotAlternate/Hexagn.git)
 
 After cloning the repository, go to the directory by using <b>cd [directory]</b> or access it via your file manager and opening in the terminal. Run this command when you are in the directory:
 

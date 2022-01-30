@@ -32,3 +32,18 @@ std::vector<std::string> split(std::string str, char sep)
 
     return res;
 }
+
+
+// alt's version of function
+int intIndexOf(std::string str, std::string prefix) {
+    for (int i = 0; i < str.length(); ++i) {
+        if (str.substr(i, prefix.length()) == prefix) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool doesStartsWith(std::string str, std::string prefix) {
+    return str.substr(0, intIndexOf(str, " ")) == prefix;
+}

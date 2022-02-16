@@ -6,41 +6,40 @@
 
 #include <compiler/compiler.h>
 #include <util.h>
-
-std::vector<std::string> split(std::string str, char sep);
+#include <compiler/parser.h>
 
 void compiler(std::string inputFileName, std::string outputFileName)
 {
-    std::string src;                                            // Storing entire source
+	// Storing entire source
+	std::string src;
 
-    // File stream to read input file
-    std::ifstream inputFileStream(inputFileName);
+	// File stream to read input file
+	std::ifstream inputFileStream(inputFileName);
+	
+	// Get all non-comment tokens into src
+	std::string str;
+	while(std::getline(inputFileStream, str))
+	{
+		auto _toks = split(str, ' ');
+		
+		for (auto tok: _toks)
+		{
+			if (tok.starts_with("//"))
+				break;
+			
+			src += tok + ' ';
+		}
 
-    // File stream to write to output file
-    std::ofstream outputFileStream(outputFileName);
-    
-    // Get all non-comment tokens into src
-    std::string str;
-    while(std::getline(inputFileStream, str))
-    {
-        auto _toks = split(str, ' ');
-        
-        for (auto tok: _toks)
-        {
-            if (tok.starts_with("//"))
-                break;
-            
-            src += tok + ' ';
-        }
-    }
+		src += '\n';
+	}
 
-    // We dont need the input file stream anymore, so close it
-    inputFileStream.close();
+	// We dont need the input file stream anymore, so close it
+	inputFileStream.close();
 
-    auto toks = split(src, ' ');
+	auto toks = tokenize(src);
+	
+	// for (const auto& tok: toks)
+	//	 std::cout << tok.toString() + '\n';
 
-    // Temporary print thing
-    for (auto tok: toks)
-        std::cout << tok << ' ';
-    std::cout << '\n';
+	compile(toks, outputFileName);
 }

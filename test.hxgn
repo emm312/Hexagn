@@ -1,5 +1,5 @@
 // test comment
 
-int a = 5;
-
-// interpreter output: int a = 5; 
+int32 a = (1 + 2) * (3 + 4);
+int32 b = 3 + 4 * 5;
+int32 c = 10;

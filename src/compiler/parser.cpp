@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <stack>
+#include <queue>
 #include <functional>
 
 #include <compiler/parser.h>
@@ -361,26 +362,22 @@ private:
 	};
 
 	std::vector<Variable> m_vars;
-	size_t m_size = 0;
 
 public:
 	void push(const std::string& name)
 	{
-		for (auto& var: m_vars)
-			var.stackOffset++;
-		m_vars.push_back({name, 0});
-		m_size++;
+		if (!m_vars.empty())
+			m_vars.push_back({name, m_vars[m_vars.size() - 1].stackOffset + 1});
+		else
+			m_vars.push_back({name, 1});
 	}
 
 	void pop()
 	{
-		for (auto& var: m_vars)
-			var.stackOffset--;
 		m_vars.pop_back();
-		m_size--;
 	}
 
-	size_t getOffset(const std::string& name) const
+	const size_t getOffset(const std::string& name) const
 	{
 		for (const auto& var: m_vars)
 			if (var.name == name)
@@ -388,9 +385,9 @@ public:
 		return -1;
 	}
 
-	size_t getSize() const
+	const size_t getSize() const
 	{
-		return m_size;
+		return m_vars.size();
 	}
 };
 
@@ -478,13 +475,11 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 				else
 				{
 					if (isOperator(stack.top()))
-					{
 						while (getPriority(stack.top()) >= getPriority(tok))
 						{
 							postfix.push_back(stack.top());
 							stack.pop();
 						}
-					}
 
 					stack.push(tok);
 				}
@@ -554,6 +549,7 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 		std::string code;
 		TokenBuffer buf(prefix);
 		std::stack<std::string> codeStack;
+		std::queue<std::string> varsQueue;
 
 		std::string (*getOpName)(const Token&) = [](const Token& tok) -> std::string
 		{
@@ -578,7 +574,7 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 		
 		// I HATE THAT I HAVE TO USE STD::FUNCTION
 
-		std::function<std::string(TokenBuffer&, size_t)> parseOp = [&isOperator, &getVal, &getOpName, &codeStack, &parseOp](TokenBuffer& buf, size_t regIndex) -> std::string
+		std::function<std::string(TokenBuffer&, size_t&)> parseOp = [&isOperator, &getVal, &getOpName, &codeStack, &varsQueue, &parseOp, &globals](TokenBuffer& buf, size_t& regIndex) -> std::string
 		{
 			std::string _return;
 
@@ -591,7 +587,14 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 			{
 				regIndex++;
 				codeStack.push(parseOp(buf, regIndex));
-				_return  += "R" + std::to_string(regIndex) + ' ';
+				_return += "R" + std::to_string(regIndex) + ' ';
+			}
+			else if (next.m_type == TokenType::TT_IDENTIFIER)
+			{
+				regIndex++;
+				const size_t& offset = globals.getOffset(next.m_val);
+				varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset) + '\n');
+				_return += "R" + std::to_string(regIndex) + ' ';
 			}
 			else
 				_return += getVal(next) + ' ';
@@ -603,13 +606,29 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 				codeStack.push(parseOp(buf, regIndex));
 				_return += "R" + std::to_string(regIndex) + '\n';
 			}
+			else if (next.m_type == TokenType::TT_IDENTIFIER)
+			{
+				regIndex++;
+				const size_t& offset = globals.getOffset(next.m_val);
+				varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset) + '\n');
+				_return += "R" + std::to_string(regIndex) + '\n';
+			}
 			else
 				_return += getVal(next) + '\n';
 			
 			return _return;
 		};
 
-		std::string code2 = parseOp(buf, 2);
+		size_t startRegIndex = 2;
+
+		std::string code2 = parseOp(buf, startRegIndex);
+
+		while (!varsQueue.empty())
+		{
+			code += varsQueue.front();
+			varsQueue.pop();
+		}
+		
 
 		while (!codeStack.empty())
 		{
@@ -632,7 +651,8 @@ void compile(std::vector<Token> tokens, std::string outputFileName)
 	// Headers
 	code << "BITS == 32\n";
 	code << "MINHEAP 4096\n";
-	code << "MINSTACK 1024\n\n";
+	code << "MINSTACK 1024\n";
+	code << "MOV R1 SP\n\n\n";
 
 	while (buf.hasNext())
 	{
@@ -649,8 +669,9 @@ void compile(std::vector<Token> tokens, std::string outputFileName)
 					exit(-1);
 				}
 
-				next = buf.next();
+				const Token& identifier = buf.current();
 
+				next = buf.next();
 				if (!buf.hasNext())
 				{
 					std::cerr << "Error: Expected '=' or '(' at " << next.m_val << " at line " << next.m_lineno << '\n';
@@ -670,9 +691,9 @@ void compile(std::vector<Token> tokens, std::string outputFileName)
 
 					auto [val, _code] = parseExpr(expr, globals);
 					code << _code;
-
 					code << "PSH " << val << "\n\n";
-					globals.push(val);
+
+					globals.push(identifier.m_val);
 				}
 				else if (next.m_type == TokenType::TT_OPEN_PAREN)
 				{
@@ -694,10 +715,7 @@ void compile(std::vector<Token> tokens, std::string outputFileName)
 		buf.advance();
 	}
 
-	code << "\n";
-	for (size_t _ = 0; _ < globals.getSize(); ++_)
-		code << "POP R0\n";
-	code << "HLT\n";
+	code << "\nMOV SP R1\nHLT\n";
 
 	std::ofstream(outputFileName) << code.str();
 }

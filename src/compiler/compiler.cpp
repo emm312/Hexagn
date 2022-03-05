@@ -6,6 +6,7 @@
 
 #include <compiler/compiler.h>
 #include <util.h>
+#include <compiler/lexer.h>
 #include <compiler/parser.h>
 
 void compiler(std::string inputFileName, std::string outputFileName)
@@ -35,11 +36,9 @@ void compiler(std::string inputFileName, std::string outputFileName)
 
 	// We dont need the input file stream anymore, so close it
 	inputFileStream.close();
-
 	auto toks = tokenize(src);
-	
 	// for (const auto& tok: toks)
 	//	 std::cout << tok.toString() + '\n';
-
-	compile(toks, outputFileName);
+	std::stringstream code = compile(toks);
+	std::ofstream(outputFileName) << code.str();
 }

@@ -8,11 +8,12 @@ int main(int argc, char* argv[])
 {
 	if (argc == 1)
 	{
-		std::cerr << "Invalid number of arguments\n" << "Usage: hexagn file.hxgn or hexagn file.hxgn -urcl file.urcl\n";
+		std::cerr << "Invalid number of arguments\n" << "Usage: hexagn file.hxgn or hexagn file.hxgn -u file.urcl\n";
 		return -1;
 	}
 
-	int index;				  // Reused index variable for arguments
+	// Reused index variable for arguments
+	int index;
 
 	std::string inputFileName = argv[1];
 	std::string outputFileName;

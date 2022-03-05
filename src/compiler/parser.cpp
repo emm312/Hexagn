@@ -1,319 +1,12 @@
 #include <iostream>
-#include <fstream>
-#include <string>
 #include <vector>
-#include <sstream>
-#include <stack>
+#include <string>
 #include <queue>
+#include <stack>
 #include <functional>
 
 #include <compiler/parser.h>
 #include <util.h>
-
-//--------------------------------//
-//		  LEXER
-//--------------------------------//
-
-const std::string KEYWORDS[] =
-{
-	// Data types
-	
-	// Signed data types
-	"int8",
-	"int16",
-	"int32",
-	"int64",
-
-	// Unsigned data types
-	"uint8",
-	"uint16",
-	"uint32",
-	"uint64",
-
-	// Function keywords
-	"func"
-};
-
-Token::Token(size_t lineno, TokenType type, std::string val, size_t start, size_t end)
-: m_lineno(lineno), m_type(type), m_val(val), m_start(start), m_end(end)
-{}
-
-std::string Token::toString() const
-{
-	return "Token{ type='"  + std::to_string(m_type)
-			+ "', value='"  + m_val
-			+ "', line='"   + std::to_string(m_lineno)
-			+ "', start='"  + std::to_string(m_start) + "', end='" + std::to_string(m_end) + "' }";
-}
-
-class Buffer
-{
-private:
-	std::string m_data;
-	size_t m_index = 0;
-
-public:
-	Buffer(const std::string& data)
-	: m_data(data)
-	{}
-
-	bool hasNext() const
-	{
-		return m_index < m_data.size() - 1;
-	}
-
-	void advance()
-	{
-		m_index++;
-	}
-
-	char next()
-	{
-		return m_data[++m_index];
-	}
-
-	char current() const
-	{
-		return m_data[m_index];
-	}
-
-	size_t pos() const
-	{
-		return m_index;
-	}
-};
-
-struct TokenTypeAndWord
-{
-	TokenType tokType;
-	std::string word;
-
-	size_t start;
-	size_t end;
-};
-
-TokenTypeAndWord makeKeywordOrIdentifier(const char& data, Buffer& buf, const std::string& source, const size_t& lineno)
-{
-	std::string word = "";
-	if (data != ' ')
-		word += data;
-
-	size_t start = buf.pos() - find_nth(source, '\n', lineno - 1);
-	size_t end = start;
-
-	while(isalnum(buf.next()) && buf.hasNext())
-	{
-		word += buf.current();
-		end++;
-	}
-
-	return std::find(std::begin(KEYWORDS), std::end(KEYWORDS), word) != std::end(KEYWORDS)
-		? TokenTypeAndWord{TokenType::TT_KEYWORD, word, start, end}
-		: TokenTypeAndWord{TokenType::TT_IDENTIFIER, word, start, end};
-}
-
-std::vector<Token> tokenize(std::string source)
-{
-	std::vector<Token> toks;
-	Buffer buf(source);
-
-	size_t lineno = 1;
-
-	while (buf.hasNext())
-	{
-		const char& data = buf.current();
-
-		if (data == ' ')
-		{
-			buf.advance();
-			continue;
-		}
-		
-		if (data == '\n')
-		{
-			lineno++;
-			buf.advance();
-			continue;
-		}
-		
-		if (data == ';')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_SEMICOLON, ";",
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-
-		if (data == '=')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_ASSIGN, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-
-		if (data == '+')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_PLUS, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-		else if (data == '-')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_MINUS, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-		else if (data == '*')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_MULT, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-		else if (data == '/')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_DIV, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-		else if (data == '^')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_POW, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-		
-		if (data == '(')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_OPEN_PAREN, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-		else if (data == ')')
-		{
-			toks.push_back(Token(lineno, TokenType::TT_CLOSE_PAREN, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
-			buf.advance();
-			continue;
-		}
-
-		if (isalpha(data))
-		{
-			auto [type, word, start, end] = makeKeywordOrIdentifier(data, buf, source, lineno);
-			toks.push_back(Token(lineno, type, word, start, end));
-
-			if (buf.current() == '(')
-			{
-				toks.push_back(Token(lineno, TokenType::TT_OPEN_PAREN, std::string(1, '('), end+1, end+1));
-				buf.advance();
-				
-				while (buf.hasNext() && buf.current() != ')')
-				{
-					auto [type2, word2, start2, end2] = makeKeywordOrIdentifier(buf.current(), buf, source, lineno);
-					auto [type3, word3, start3, end3] = makeKeywordOrIdentifier(buf.current(), buf, source, lineno);
-
-					toks.push_back(Token(lineno, type2, word2, start2, end2));
-					toks.push_back(Token(lineno, type3, word3, start3, end3));
-					
-					if (buf.current() == ',')
-					{
-						toks.push_back(Token(lineno, TokenType::TT_COMMA, std::string(1, ','), end3+1, end3+1));
-						buf.advance();
-					}
-				}
-
-				if (buf.current() == ')')
-				{
-					toks.push_back(Token(lineno, TokenType::TT_CLOSE_PAREN, std::string(1, ')'),
-										 buf.pos() - find_nth(source, '\n', lineno - 1),
-										 buf.pos() - find_nth(source, '\n', lineno - 1)));
-					buf.advance();
-				}
-				else
-				{
-					std::cerr << "Error: Expected ')' at line " << lineno << '\n';
-
-					size_t i;
-					for (i = find_nth(source, '\n', lineno - 1); source[i] != '\n'; ++i)
-						std::cerr << source[i];
-					std::cerr << '\n';
-
-					i = buf.pos() - find_nth(source, '\n', lineno - 1) - 3;	 // WHY THE -3?????
-					drawArrows(i, i);
-
-					exit(-1);
-				}
-			}
-
-			continue;
-		}
-		else if (isdigit(data))
-		{
-			std::string word = "";  
-			word += data;
-
-			size_t start = buf.pos() - find_nth(source, '\n', lineno - 1);
-			size_t end = start;
-
-			while(isdigit(buf.next()))
-			{
-				word += buf.current();
-				end++;
-			}
-
-			toks.push_back(Token(lineno, TokenType::TT_NUM, word, start, end));
-
-			continue;
-		}
-
-		else
-		{
-			std::cerr << "Invalid syntax at line " << lineno << '\n';
-
-			size_t i;
-			for (i = find_nth(source, '\n', lineno - 1); source[i] != '\n'; ++i)
-				std::cerr << source[i];
-			std::cerr << '\n';
-
-			i = buf.pos() - find_nth(source, '\n', lineno - 1);
-			drawArrows(i, i);
-
-			exit(-1);
-		}
-
-		buf.advance();
-	}
-
-	return toks;
-}
-
-//--------------------------------//
-//		  COMPILER
-//--------------------------------//
 
 class TokenBuffer
 {
@@ -397,12 +90,25 @@ struct VarStackFrame
 	std::string code;
 };
 
-VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
+VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& locals)
 {
 	if (toks.size() == 1)
 		return VarStackFrame{ toks[0].m_val, "" };
 	else
 	{
+		// Before anything, check for references to non-existent variables
+		for (const auto& tok: toks)
+		{
+			if (tok.m_type == TokenType::TT_IDENTIFIER)
+				if (locals.getOffset(tok.m_val) == size_t(-1))
+				{
+					std::cerr << "Error: No such variable '" << tok.m_val << "' in current context at line " << tok.m_lineno << '\n';
+					printLine(glob_src, tok.m_lineno);
+					drawArrows(tok.m_start, tok.m_end);
+					exit(-1);
+				}
+		}
+
 		// Convert infix to prefix from toks vector
  
 		bool (*isOperator)(const Token&) = [](const Token& tok)
@@ -574,7 +280,7 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 		
 		// I HATE THAT I HAVE TO USE STD::FUNCTION
 
-		std::function<std::string(TokenBuffer&, size_t&)> parseOp = [&isOperator, &getVal, &getOpName, &codeStack, &varsQueue, &parseOp, &globals](TokenBuffer& buf, size_t& regIndex) -> std::string
+		std::function<std::string(TokenBuffer&, size_t&)> parseOp = [&isOperator, &getVal, &getOpName, &codeStack, &varsQueue, &parseOp, &locals](TokenBuffer& buf, size_t& regIndex) -> std::string
 		{
 			std::string _return;
 
@@ -592,7 +298,7 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 			else if (next.m_type == TokenType::TT_IDENTIFIER)
 			{
 				regIndex++;
-				const size_t& offset = globals.getOffset(next.m_val);
+				const size_t& offset = locals.getOffset(next.m_val);
 				varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset) + '\n');
 				_return += "R" + std::to_string(regIndex) + ' ';
 			}
@@ -609,7 +315,7 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 			else if (next.m_type == TokenType::TT_IDENTIFIER)
 			{
 				regIndex++;
-				const size_t& offset = globals.getOffset(next.m_val);
+				const size_t& offset = locals.getOffset(next.m_val);
 				varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset) + '\n');
 				_return += "R" + std::to_string(regIndex) + '\n';
 			}
@@ -620,7 +326,6 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 		};
 
 		size_t startRegIndex = 2;
-
 		std::string code2 = parseOp(buf, startRegIndex);
 
 		while (!varsQueue.empty())
@@ -628,8 +333,6 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 			code += varsQueue.front();
 			varsQueue.pop();
 		}
-		
-
 		while (!codeStack.empty())
 		{
 			code += codeStack.top();
@@ -637,16 +340,15 @@ VarStackFrame parseExpr(std::vector<Token> toks, const VarStack& globals)
 		}
 
 		code += code2;
-
-		return VarStackFrame{ "R2", code };
+		return { "R2", code };
 	}
 }
 
-void compile(std::vector<Token> tokens, std::string outputFileName)
+std::stringstream compile(std::vector<Token> tokens)
 {
 	TokenBuffer buf(tokens);
 	std::stringstream code;
-	VarStack globals;
+	VarStack locals;
 
 	// Headers
 	code << "BITS == 32\n";
@@ -660,12 +362,15 @@ void compile(std::vector<Token> tokens, std::string outputFileName)
 
 		switch (current.m_type)
 		{
+			// Variable / function definition
 			case TokenType::TT_KEYWORD:
 			{
 				Token next = buf.next();
 				if (next.m_type != TokenType::TT_IDENTIFIER || !buf.hasNext())
 				{
-					std::cerr << "Error: Expected identifier after keyword " << current.m_val << " at line " << current.m_lineno << '\n';
+					std::cerr << "Error: Expected identifier after keyword at line " << current.m_lineno << '\n';
+					printLine(glob_src, current.m_lineno);
+					drawArrows(current.m_start, current.m_end);
 					exit(-1);
 				}
 
@@ -674,13 +379,23 @@ void compile(std::vector<Token> tokens, std::string outputFileName)
 				next = buf.next();
 				if (!buf.hasNext())
 				{
-					std::cerr << "Error: Expected '=' or '(' at " << next.m_val << " at line " << next.m_lineno << '\n';
+					std::cerr << "Error: Expected '=' or '(' at line " << next.m_lineno << '\n';
+					printLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end);
 					exit(-1);
 				}
-				
+
+				// Variable definition
 				if (next.m_type == TokenType::TT_ASSIGN)
 				{
 					buf.advance();
+					if (!buf.hasNext())
+					{
+						std::cerr << "Error: Expected expression after '=' at line " << next.m_lineno << '\n';
+						printLine(glob_src, next.m_lineno);
+						drawArrows(next.m_start, next.m_end);
+						exit(-1);
+					}
 
 					std::vector<Token> expr;
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
@@ -689,33 +404,80 @@ void compile(std::vector<Token> tokens, std::string outputFileName)
 						buf.advance();
 					}
 
-					auto [val, _code] = parseExpr(expr, globals);
+					auto [val, _code] = parseExpr(expr, locals);
 					code << _code;
 					code << "PSH " << val << "\n\n";
 
-					globals.push(identifier.m_val);
+					locals.push(identifier.m_val);
 				}
+
+				// Function definition / call
 				else if (next.m_type == TokenType::TT_OPEN_PAREN)
 				{
-
+					// TODO: Function definition and function call
 				}
+
 				else
 				{
-					std::cerr << "Error: Expected '=' or '(' at " << next.m_val << " at line " << next.m_lineno << '\n';
+					std::cerr << "Error: Expected '=' or '(' at line " << next.m_lineno << '\n';
+					printLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end);
 					exit(-1);
 				}
 
 				break;
 			}
 
-			default:
-				break;
+			// Variable reassignment
+			case TokenType::TT_IDENTIFIER:
+			{
+				const Token& identifier = buf.current();
+				size_t offset = locals.getOffset(identifier.m_val);
+
+				if (offset == size_t(-1))
+				{
+					std::cerr << "Error: No such variable '" << identifier.m_val << "' in current context at line " << identifier.m_lineno << '\n';
+					printLine(glob_src, identifier.m_lineno);
+					drawArrows(identifier.m_start, identifier.m_end);
+					exit(-1);
+				}
+
+				Token next = buf.next();
+				if (!buf.hasNext() || next.m_type != TokenType::TT_ASSIGN)
+				{
+					std::cerr << "Error: Expected '=' at line " << next.m_lineno << '\n';
+					printLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end);
+					exit(-1);
+				}
+
+				buf.advance();
+				if (!buf.hasNext())
+				{
+					std::cerr << "Error: Expected expression after '=' at line " << next.m_lineno << '\n';
+					printLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end);
+					exit(-1);
+				}
+
+				std::vector<Token> expr;
+				while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
+				{
+					expr.push_back(buf.current());
+					buf.advance();
+				}
+
+				auto [val, _code] = parseExpr(expr, locals);
+				code << _code;
+				code << "LSTR R1 -" << offset << ' ' << val << "\n\n";
+			}
+
+			default: break;
 		}
 
 		buf.advance();
 	}
 
-	code << "\nMOV SP R1\nHLT\n";
-
-	std::ofstream(outputFileName) << code.str();
+	code << "\nCAL .main\nMOV SP R1\nHLT\n";
+	return code;
 }

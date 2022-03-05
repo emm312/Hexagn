@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <compiler/lexer.h>
+#include <compiler/token.h>
 
 int indexOf(char* arr[], std::string element, int size);
 std::vector<std::string> split(std::string str, char sep);

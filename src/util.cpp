@@ -125,6 +125,12 @@ namespace std
 			case TokenType::TT_POW:
 				return "POW";
 			
+			case TokenType::TT_OPEN_BRACE:
+				return "OPEN_BRACE";
+			
+			case TokenType::TT_CLOSE_BRACE:
+				return "CLOSE_BRACE";
+			
 			default:
 				return "Unknown";
 		}

@@ -38,7 +38,6 @@ void compiler(std::string inputFileName, std::string outputFileName)
 	inputFileStream.close();
 	auto toks = tokenize(src);
 	// for (const auto& tok: toks)
-	//	 std::cout << tok.toString() + '\n';
-	std::stringstream code = compile(toks);
-	std::ofstream(outputFileName) << code.str();
+	// 	 std::cout << tok.toString() + '\n';
+	std::ofstream(outputFileName) << compile(toks).str();
 }

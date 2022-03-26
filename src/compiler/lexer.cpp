@@ -20,7 +20,9 @@ std::string glob_src;
 const std::string KEYWORDS[] =
 {
 	// Data types
-	
+
+	"void",
+
 	// Signed data types
 	"int8",
 	"int16",
@@ -31,10 +33,7 @@ const std::string KEYWORDS[] =
 	"uint8",
 	"uint16",
 	"uint32",
-	"uint64",
-
-	// Function keywords
-	"func"
+	"uint64"
 };
 
 class Buffer
@@ -44,9 +43,10 @@ private:
 	size_t m_index = 0;
 
 public:
-	Buffer(const std::string& data)
-	: m_data(data)
-	{}
+	Buffer(const std::string &data)
+		: m_data(data)
+	{
+	}
 
 	bool hasNext() const
 	{
@@ -83,24 +83,58 @@ struct TokenTypeAndWord
 	size_t end;
 };
 
-TokenTypeAndWord makeKeywordOrIdentifier(const char& data, Buffer& buf, const std::string& source, const size_t& lineno)
+TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& source, const size_t& lineno)
 {
-	std::string word = "";
-	if (data != ' ')
-		word += data;
+	std::string word;
 
 	size_t start = buf.pos() - find_nth(source, '\n', lineno - 1);
 	size_t end = start;
-
-	while(isalnum(buf.next()) && buf.hasNext())
+	
+	// Is keyword or identifier
+	if (isalpha(data) || data == '_')
 	{
 		word += buf.current();
 		end++;
+		while (buf.hasNext() && isalnum(buf.next()))
+		{
+			word += buf.current();
+			end++;
+		}
+
+		return std::find(std::begin(KEYWORDS), std::end(KEYWORDS), word) != std::end(KEYWORDS)
+				   ? TokenTypeAndWord{TokenType::TT_KEYWORD, word, start, end}
+				   : TokenTypeAndWord{TokenType::TT_IDENTIFIER, word, start, end};
 	}
 
-	return std::find(std::begin(KEYWORDS), std::end(KEYWORDS), word) != std::end(KEYWORDS)
-		? TokenTypeAndWord{ TokenType::TT_KEYWORD,    word, start, end }
-		: TokenTypeAndWord{ TokenType::TT_IDENTIFIER, word, start, end };
+	// Is number
+	else if (isdigit(data))
+	{
+		while (buf.hasNext())
+		{
+			const char& curr = buf.current();
+			if (!isdigit(curr))
+			{
+				std::cerr << "Invalid number at line " << lineno << '\n';
+				printLine(source, lineno);
+				drawArrows(start, end);
+				exit(-1);
+			}
+
+			word += curr;
+			end++;
+		}
+
+		return TokenTypeAndWord{TokenType::TT_NUM, word, start, end};
+	}
+
+	// Invalid character
+	else
+	{
+		std::cerr << "Invalid character at line " << lineno << '\n';
+		printLine(source, lineno);
+		drawArrows(start, end);
+		exit(-1);
+	}
 }
 
 std::vector<Token> tokenize(std::string source)
@@ -121,20 +155,20 @@ std::vector<Token> tokenize(std::string source)
 			buf.advance();
 			continue;
 		}
-		
+
 		if (data == '\n')
 		{
 			lineno++;
 			buf.advance();
 			continue;
 		}
-		
+
 		if (data == ';')
 		{
 			toks.push_back(Token(lineno, TokenType::TT_SEMICOLON, ";",
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
 			buf.advance();
 			continue;
 		}
@@ -144,7 +178,7 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_ASSIGN, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
 			buf.advance();
 			continue;
 		}
@@ -154,7 +188,7 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_PLUS, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
 			buf.advance();
 			continue;
 		}
@@ -163,7 +197,7 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_MINUS, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
 			buf.advance();
 			continue;
 		}
@@ -172,7 +206,7 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_MULT, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
 			buf.advance();
 			continue;
 		}
@@ -181,17 +215,17 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_DIV, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
 			buf.advance();
 			continue;
 		}
-		
+
 		if (data == '(')
 		{
 			toks.push_back(Token(lineno, TokenType::TT_OPEN_PAREN, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
 			buf.advance();
 			continue;
 		}
@@ -200,7 +234,17 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_CLOSE_PAREN, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			
+
+			buf.advance();
+			continue;
+		}
+
+		if (data == ',')
+		{
+			toks.push_back(Token(lineno, TokenType::TT_COMMA, std::string(1, data),
+								 buf.pos() - find_nth(source, '\n', lineno - 1),
+								 buf.pos() - find_nth(source, '\n', lineno - 1)));
+
 			buf.advance();
 			continue;
 		}
@@ -224,58 +268,20 @@ std::vector<Token> tokenize(std::string source)
 
 		if (isalpha(data))
 		{
-			auto [type, word, start, end] = makeKeywordOrIdentifier(data, buf, source, lineno);
+			auto [type, word, start, end] = makeWord(data, buf, source, lineno);
 			toks.push_back(Token(lineno, type, word, start, end));
-
-			if (buf.current() == '(')
-			{
-				toks.push_back(Token(lineno, TokenType::TT_OPEN_PAREN, std::string(1, '('), end+1, end+1));
-				buf.advance();
-				
-				while (buf.hasNext() && buf.current() != ')')
-				{
-					auto [type2, word2, start2, end2] = makeKeywordOrIdentifier(buf.current(), buf, source, lineno);
-					auto [type3, word3, start3, end3] = makeKeywordOrIdentifier(buf.current(), buf, source, lineno);
-
-					toks.push_back(Token(lineno, type2, word2, start2, end2));
-					toks.push_back(Token(lineno, type3, word3, start3, end3));
-					
-					if (buf.current() == ',')
-					{
-						toks.push_back(Token(lineno, TokenType::TT_COMMA, std::string(1, ','), end3+1, end3+1));
-						buf.advance();
-					}
-				}
-
-				if (buf.current() == ')')
-				{
-					toks.push_back(Token(lineno, TokenType::TT_CLOSE_PAREN, std::string(1, ')'),
-										 buf.pos() - find_nth(source, '\n', lineno - 1),
-										 buf.pos() - find_nth(source, '\n', lineno - 1)));
-					buf.advance();
-				}
-				else
-				{
-					std::cerr << "Error: Expected ')' at line " << lineno << '\n';
-					printLine(source, lineno);
-					size_t i = buf.pos() - find_nth(source, '\n', lineno - 1) - 3;	 // WHY THE -3?????
-					drawArrows(i, i);
-					exit(-1);
-				}
-			}
-
 			continue;
 		}
 
 		else if (isdigit(data))
 		{
-			std::string word = "";  
+			std::string word = "";
 			word += data;
 
 			size_t start = buf.pos() - find_nth(source, '\n', lineno - 1);
 			size_t end = start;
 
-			while(isdigit(buf.next()))
+			while (isdigit(buf.next()))
 			{
 				word += buf.current();
 				end++;

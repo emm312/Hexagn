@@ -28,6 +28,6 @@ public:
 	const size_t getSize() const;
 };
 
-std::stringstream compile(std::vector<Token> tokens, bool isFunc = false, const VarStack& funcArgs = VarStack());
+std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc = false, const VarStack& funcArgs = VarStack());
 
 #endif // PARSER_H

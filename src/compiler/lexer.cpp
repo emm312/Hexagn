@@ -115,7 +115,7 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 			if (!isdigit(curr))
 			{
 				std::cerr << "Invalid number at line " << lineno << '\n';
-				printLine(source, lineno);
+				std::cerr << getSourceLine(source, lineno);
 				drawArrows(start, end);
 				exit(-1);
 			}
@@ -131,7 +131,7 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 	else
 	{
 		std::cerr << "Invalid character at line " << lineno << '\n';
-		printLine(source, lineno);
+		std::cerr << getSourceLine(source, lineno);
 		drawArrows(start, end);
 		exit(-1);
 	}
@@ -295,7 +295,7 @@ std::vector<Token> tokenize(std::string source)
 		else
 		{
 			std::cerr << "Invalid syntax at line " << lineno << '\n';
-			printLine(source, lineno);
+			std::cerr << getSourceLine(source, lineno);
 			size_t i = buf.pos() - find_nth(source, '\n', lineno - 1);
 			size_t j = source.find_first_of(' ', i);
 			drawArrows(i, j);

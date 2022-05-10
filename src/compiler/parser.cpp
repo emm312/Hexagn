@@ -5,6 +5,7 @@
 #include <stack>
 #include <functional>
 #include <ranges>
+#include <regex>
 
 #include <compiler/parser.h>
 #include <util.h>
@@ -294,8 +295,8 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					// If there are no function arguments then this identifier doesnt exist
 					if (funcArgs.getSize() == 0)
 					{
-						std::cout << "Error: Identifier " << next.m_val << " is not defined in current context\n";
-						printLine(glob_src, next.m_lineno);
+						std::cerr << "Error: Identifier " << next.m_val << " is not defined in current context\n";
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -303,8 +304,8 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					offset = funcArgs.getOffset(next.m_val);
 					if (offset == size_t(-1))
 					{
-						std::cout << "Error: Identifier " << next.m_val << " is not defined in current context\n";
-						printLine(glob_src, next.m_lineno);
+						std::cerr << "Error: Identifier " << next.m_val << " is not defined in current context\n";
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -340,8 +341,8 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					// If there are no function arguments then this identifier doesnt exist
 					if (funcArgs.getSize() == 0)
 					{
-						std::cout << "Error: Identifier " << next.m_val << " is not defined in current context\n";
-						printLine(glob_src, next.m_lineno);
+						std::cerr << "Error: Identifier " << next.m_val << " is not defined in current context\n";
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -349,8 +350,8 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					offset = funcArgs.getOffset(next.m_val);
 					if (offset == size_t(-1))
 					{
-						std::cout << "Error: Identifier " << next.m_val << " is not defined in current context\n";
-						printLine(glob_src, next.m_lineno);
+						std::cerr << "Error: Identifier " << next.m_val << " is not defined in current context\n";
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -391,7 +392,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 
 std::vector<Function> funcs;
 
-std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack& funcArgs)
+std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& funcArgs)
 {
 	TokenBuffer buf(tokens);
 	std::stringstream code;
@@ -410,6 +411,9 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 	{
 		const Token& current = buf.current();
 
+		if (debugSymbols)
+			code << "// " << getSourceLine(glob_src, current.m_lineno);
+
 		switch (current.m_type)
 		{
 			// Variable or function definition
@@ -419,7 +423,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 				if (!buf.hasNext() || next.m_type != TokenType::TT_IDENTIFIER)
 				{
 					std::cerr << "Error: Expected identifier after keyword at line " << current.m_lineno << '\n';
-					printLine(glob_src, current.m_lineno);
+					std::cerr << getSourceLine(glob_src, current.m_lineno);
 					drawArrows(current.m_start, current.m_end);
 					exit(-1);
 				}
@@ -429,7 +433,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 				if (!buf.hasNext() && !(next.m_type == TokenType::TT_ASSIGN || next.m_type == TokenType::TT_OPEN_PAREN))
 				{
 					std::cerr << "Error: Expected '=' or '(' at line " << next.m_lineno << '\n';
-					printLine(glob_src, next.m_lineno);
+					std::cerr << getSourceLine(glob_src, next.m_lineno);
 					drawArrows(next.m_start, next.m_end);
 					exit(-1);
 				}
@@ -441,7 +445,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 					if (!buf.hasNext())
 					{
 						std::cerr << "Error: Expected expression after '=' at line " << next.m_lineno << '\n';
-						printLine(glob_src, next.m_lineno);
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -469,7 +473,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 					if (!buf.hasNext())
 					{
 						std::cerr << "Error: Expected keyword or ')' at line " << next.m_lineno << '\n';
-						printLine(glob_src, next.m_lineno);
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -484,7 +488,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						if (!buf.hasNext() || type.m_type != TokenType::TT_KEYWORD)
 						{
 							std::cerr << "Error: Expected keyword or ')' at line " << type.m_lineno << '\n';
-							printLine(glob_src, type.m_lineno);
+							getSourceLine(glob_src, type.m_lineno);
 							drawArrows(type.m_start, type.m_end);
 							exit(-1);
 						}
@@ -493,7 +497,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						if (!buf.hasNext() || next.m_type != TokenType::TT_IDENTIFIER)
 						{
 							std::cerr << "Error: Expected identifier after keyword at line " << next.m_lineno << '\n';
-							printLine(glob_src, next.m_lineno);
+							std::cerr << getSourceLine(glob_src, next.m_lineno);
 							drawArrows(next.m_start, next.m_end);
 							exit(-1);
 						}
@@ -507,7 +511,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						if (!buf.hasNext())
 						{
 							std::cerr << "Error: Expected ',' at line " << next.m_lineno << '\n';
-							printLine(glob_src, next.m_lineno);
+							std::cerr << getSourceLine(glob_src, next.m_lineno);
 							drawArrows(next.m_start, next.m_end);
 							exit(-1);
 						}
@@ -517,7 +521,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						else if (next.m_type != TokenType::TT_COMMA)
 						{
 							std::cerr << "Error: Expected ',' at line " << next.m_lineno << '\n';
-							printLine(glob_src, next.m_lineno);
+							std::cerr << getSourceLine(glob_src, next.m_lineno);
 							drawArrows(next.m_start, next.m_end);
 							exit(-1);
 						}
@@ -532,9 +536,9 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 					if (!buf.hasNext() || next.m_type != TokenType::TT_OPEN_BRACE)
 					{
 						std::cerr << "Error: Expected '{' at line " << next.m_lineno << '\n';
-						printLine(glob_src, next.m_lineno);
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
-						std::cout << std::to_string(next.m_type) << '\n';
+						std::cerr << std::to_string(next.m_type) << '\n';
 						exit(-1);
 					}
 
@@ -556,7 +560,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						buf.advance();
 					}
 
-					func.code = compile(body, true, funcArgsStack).str();
+					func.code = compile(body, debugSymbols, true, funcArgsStack).str();
 					funcs.push_back(func);
 				}
 
@@ -574,7 +578,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 				if (!buf.hasNext() && !(next.m_type == TokenType::TT_ASSIGN || next.m_type == TokenType::TT_OPEN_PAREN))
 				{
 					std::cerr << "Error: Expected '=' or function call at line " << next.m_lineno << '\n';
-					printLine(glob_src, next.m_lineno);
+					std::cerr << getSourceLine(glob_src, next.m_lineno);
 					drawArrows(next.m_start, next.m_end);
 					exit(-1);
 				}
@@ -590,7 +594,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						if (offset == size_t(-1))
 						{
 							std::cerr << "Error: No such variable '" << identifier.m_val << "' in current context at line " << identifier.m_lineno << '\n';
-							printLine(glob_src, identifier.m_lineno);
+							getSourceLine(glob_src, identifier.m_lineno);
 							drawArrows(identifier.m_start, identifier.m_end);
 							exit(-1);
 						}
@@ -600,7 +604,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 					if (!buf.hasNext())
 					{
 						std::cerr << "Error: Expected expression after '=' at line " << next.m_lineno << '\n';
-						printLine(glob_src, next.m_lineno);
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -633,7 +637,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 					if (!buf.hasNext())
 					{
 						std::cerr << "Error: Expected identifier or ')' at line " << next.m_lineno << '\n';
-						printLine(glob_src, next.m_lineno);
+						std::cerr << getSourceLine(glob_src, next.m_lineno);
 						drawArrows(next.m_start, next.m_end);
 						exit(-1);
 					}
@@ -648,7 +652,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						if (!buf.hasNext() || (current.m_type != TokenType::TT_IDENTIFIER && !isVal(current)))
 						{
 							std::cerr << "Error: Expected identifier or value at line " << buf.current().m_lineno << '\n';
-							printLine(glob_src, buf.current().m_lineno);
+							getSourceLine(glob_src, buf.current().m_lineno);
 							drawArrows(buf.current().m_start, buf.current().m_end);
 							exit(-1);
 						}
@@ -656,7 +660,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						if (current.m_type == TokenType::TT_IDENTIFIER && locals.getOffset(current.m_val) == size_t(-1) && funcArgs.getOffset(current.m_val) == size_t(-1))
 						{
 							std::cerr << "Error: No such variable '" << current.m_val << "' in current context at line " << current.m_lineno << '\n';
-							printLine(glob_src, current.m_lineno);
+							std::cerr << getSourceLine(glob_src, current.m_lineno);
 							drawArrows(current.m_start, current.m_end);
 							exit(-1);
 						}
@@ -671,7 +675,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 						if (!buf.hasNext() || buf.current().m_type != TokenType::TT_COMMA)
 						{
 							std::cerr << "Error: Expected ',' or ')' at line " << buf.current().m_lineno << '\n';
-							printLine(glob_src, buf.current().m_lineno);
+							getSourceLine(glob_src, buf.current().m_lineno);
 							drawArrows(buf.current().m_start, buf.current().m_end);
 							exit(-1);
 						}
@@ -692,7 +696,7 @@ std::stringstream compile(std::vector<Token> tokens, bool isFunc, const VarStack
 							else
 							{
 								std::cerr << "Error: No such variable '" << arg.m_val << "' in current context at line " << arg.m_lineno << '\n';
-								printLine(glob_src, arg.m_lineno);
+								getSourceLine(glob_src, arg.m_lineno);
 								drawArrows(arg.m_start, arg.m_end);
 								exit(-1);
 							}

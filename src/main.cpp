@@ -12,32 +12,41 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	std::string inputFileName;
+	std::string outputFileName = "out.urcl";
+	bool debugSymbols = false;
+
 	// Reused index variable for arguments
-	int index;
+	int index = 1;
 
-	std::string inputFileName = argv[1];
-	std::string outputFileName;
-
-	if ((index = indexOf(argv, "-o", argc)) != -1)
+	while (index < argc)
 	{
-		if (index == argc - 1)
-		{
-			std::cerr << "No output filename provided\n";
-			return -1;
-		}
+		const std::string val = argv[index];
 
-		std::string fileName = argv[index + 1];
-		
-		if (fileName.starts_with('-'))
+		if (val == "-o")
 		{
-			std::cerr << "Expected output filename, instead got compiler flag\n";
-			return -1;
-		}
+			index++;
 
-		outputFileName = fileName;
+			if (index >= argc)
+			{
+				std::cerr << "\033[1m" << argv[0] << ": \033[31merror: \033[0mMissing filename after '-o'\n";
+				return -1;
+			}
+			outputFileName = argv[index];
+		}
+		else if (val == "-g")
+			debugSymbols = true;
+		else
+			inputFileName = val;
+
+		index++;
 	}
-	else
-		outputFileName = "out.urcl";
+
+	if (inputFileName.empty())
+	{
+		std::cerr << "\033[1m" << argv[0] << ": \033[31mfatal error: \033[0mNo input filename provided\nCompilation terminated.\n";
+		return -1;
+	}
 	
-	compiler(inputFileName, outputFileName);
+	compiler(inputFileName, outputFileName, debugSymbols);
 }

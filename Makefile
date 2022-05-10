@@ -3,7 +3,7 @@ OBJS = ${SOURCES:.cpp=.o}
 
 CXX = g++		# Change to clang++ if using clang
 
-CFLAGS = -Isrc/include -O2 -Wall -std=c++20 -g
+CFLAGS = -I./include -O2 -Wall -std=c++20 -g
 
 hexagn: pre-build $(OBJS)
 	$(CXX) $(CFLAGS) obj/*.o -o $@
@@ -13,7 +13,7 @@ hexagn: pre-build $(OBJS)
 
 clean:
 	rm -rf obj/
-	rm -rf hexagn
 
 pre-build: clean
+	rm -rf hexagn
 	mkdir obj

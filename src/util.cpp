@@ -36,7 +36,7 @@ std::vector<std::string> split(std::string str, char sep)
 
 void drawArrows(size_t start, size_t end)
 {
-	// Offset due to printLine function
+	// Offset due to getSourceLine function
 	start += 3;
 	end   += 3;
 
@@ -62,12 +62,14 @@ size_t find_nth(std::string haystack, const char& needle, const size_t& nth)
 	return -1;
 }
 
-void printLine(std::string src, size_t line)
+const std::string getSourceLine(const std::string& src, const size_t& line)
 {
-	std::cerr << line << ": ";
+	std::string ret;
+	ret += line + ": ";
 	for (size_t i = find_nth(src, '\n', line - 1); src[i] != '\n'; ++i)
-		std::cerr << src[i];
-	std::cerr << '\n';
+		ret += src[i];
+	ret += '\n';
+	return ret;
 }
 
 namespace std

@@ -9,7 +9,7 @@
 #include <compiler/lexer.h>
 #include <compiler/parser.h>
 
-void compiler(std::string inputFileName, std::string outputFileName)
+void compiler(const std::string& inputFileName, const std::string& outputFileName, const bool& debugSymbols)
 {
 	// Storing entire source
 	std::string src;
@@ -39,5 +39,5 @@ void compiler(std::string inputFileName, std::string outputFileName)
 	auto toks = tokenize(src);
 	// for (const auto& tok: toks)
 	// 	 std::cout << tok.toString() + '\n';
-	std::ofstream(outputFileName) << compile(toks).str();
+	std::ofstream(outputFileName) << compile(toks, debugSymbols).str();
 }

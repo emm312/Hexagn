@@ -28,7 +28,7 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 			if (tok.starts_with("//"))
 				break;
 			
-			src += tok + ' ';
+			src += replace(tok, "\t", "") + ' ';
 		}
 
 		src += '\n';

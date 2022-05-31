@@ -17,6 +17,17 @@ int indexOf(char* arr[], std::string element, int size)
 	return -1;
 }
 
+std::string replace(std::string str, const std::string& from, const std::string& to)
+{
+	size_t start_pos = 0;
+	while ((start_pos = str.find(from, start_pos)) != std::string::npos)
+	{
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length();
+	}
+	return str;
+}
+
 std::vector<std::string> split(std::string str, char sep)
 {
 	std::stringstream stream(str);
@@ -36,7 +47,7 @@ std::vector<std::string> split(std::string str, char sep)
 
 void drawArrows(size_t start, size_t end)
 {
-	// Offset due to getSourceLine function
+	// Offset due to adding line number on the left
 	start += 3;
 	end   += 3;
 

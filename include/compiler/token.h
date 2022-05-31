@@ -24,6 +24,7 @@ enum class TokenType: size_t
 	TT_MULT,
 	TT_DIV,
 	TT_POW,
+	TT_MOD,
 
 	TT_OPEN_BRACE,
 	TT_CLOSE_BRACE,

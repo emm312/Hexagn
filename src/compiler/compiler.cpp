@@ -25,10 +25,12 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 		
 		for (auto tok: _toks)
 		{
+			tok = replace(tok, "\t", "");
+
 			if (tok.starts_with("//"))
 				break;
-			
-			src += replace(tok, "\t", "") + ' ';
+
+			src += tok + ' ';
 		}
 
 		src += '\n';

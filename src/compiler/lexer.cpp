@@ -16,30 +16,26 @@ std::string glob_src;
 //--------------------------------//
 //		  LEXER
 //--------------------------------//
-
-const std::string KEYWORDS[] =
+const std::string SignedIntTypes[] =
 {
-	// Data types
-	"void",
-
-	// Signed data types
 	"int8",
 	"int16",
 	"int32",
-	"int64",
+	"int64"
+};
 
-	// Unsigned data types
+const std::string UnsignedIntTypes[] =
+{
 	"uint8",
 	"uint16",
 	"uint32",
-	"uint64",
+	"uint64"
+};
 
-	// Floats
+const std::string FloatTypes[] =
+{
 	"float32",
-	"float64",
-
-	"string",
-	"char"
+	"float64"
 };
 
 class Buffer
@@ -109,31 +105,21 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 			buf.advance();
 		}
 
-		return std::find(std::begin(KEYWORDS), std::end(KEYWORDS), word) != std::end(KEYWORDS)
-				? TokenTypeAndWord { TokenType::TT_KEYWORD,    word, start, end }
-				: TokenTypeAndWord { TokenType::TT_IDENTIFIER, word, start, end };
-	}
+		if (word == "void") return { TokenType::TT_VOID, word, start, end };
 
-	// Is number
-	else if (isdigit(data))
-	{
-		while (buf.hasNext())
-		{
-			if (!isdigit(buf.current()))
-			{
-				std::cerr << "Error: Invalid number at line " << lineno << '\n';
-				std::cerr << lineno << ": " << getSourceLine(source, lineno) << '\n';
-				drawArrows(start, end);
-				exit(-1);
-			}
+		else if (std::find(std::begin(SignedIntTypes), std::end(SignedIntTypes), word) != std::end(SignedIntTypes))
+			return { TokenType::TT_INT, word, start, end };
+		
+		else if (std::find(std::begin(UnsignedIntTypes), std::end(UnsignedIntTypes), word) != std::end(UnsignedIntTypes))
+			return { TokenType::TT_UINT, word, start, end };
 
-			word += buf.current();
-			end++;
+		else if (std::find(std::begin(FloatTypes), std::end(FloatTypes), word) != std::end(FloatTypes))
+			return { TokenType::TT_FLOAT, word, start, end };
 
-			buf.advance();
-		}
+		else if (word == "string") return { TokenType::TT_STRING,    word, start, end };
+		else if (word == "char")   return { TokenType::TT_CHARACTER, word, start, end };
 
-		return TokenTypeAndWord { TokenType::TT_NUM, word, start, end };
+		else return { TokenType::TT_IDENTIFIER, word, start, end };
 	}
 
 	// Invalid character
@@ -141,7 +127,7 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 	{
 		std::cerr << "Invalid character at line " << lineno << '\n';
 		std::cerr << lineno << ": " << getSourceLine(source, lineno);
-		drawArrows(start, end);
+		drawArrows(start, end, lineno);
 		exit(-1);
 	}
 }
@@ -256,8 +242,11 @@ std::vector<Token> tokenize(std::string source)
 				{
 					std::cerr << "Invalid escape sequence at line " << lineno << '\n';
 					std::cerr << lineno << ": " << getSourceLine(source, lineno);
-					drawArrows(buf.pos() - find_nth(source, '\n', lineno - 1) - 1,
-							   buf.pos() - find_nth(source, '\n', lineno - 1));
+					drawArrows(
+						buf.pos() - find_nth(source, '\n', lineno - 1) - 1,
+						buf.pos() - find_nth(source, '\n', lineno - 1),
+						lineno
+					);
 					exit(-1);
 				}
 			}
@@ -269,8 +258,11 @@ std::vector<Token> tokenize(std::string source)
 			{
 				std::cerr << "Expected closing ' for character literal at line " << lineno << '\n';
 				std::cerr << lineno << ": " << getSourceLine(source, lineno);
-				drawArrows(buf.pos() - find_nth(source, '\n', lineno - 1),
-						   buf.pos() - find_nth(source, '\n', lineno - 1));
+				drawArrows(
+					buf.pos() - find_nth(source, '\n', lineno - 1),
+					buf.pos() - find_nth(source, '\n', lineno - 1),
+					lineno
+				);
 				exit(-1);
 			}
 
@@ -311,8 +303,11 @@ std::vector<Token> tokenize(std::string source)
 					{
 						std::cerr << "Unknown escape sequence at line " << lineno << '\n';
 						std::cerr << lineno << ": " << getSourceLine(source, lineno);
-						drawArrows(buf.pos() - find_nth(source, '\n', lineno - 1),
-								   buf.pos() - find_nth(source, '\n', lineno - 1));
+						drawArrows(
+							buf.pos() - find_nth(source, '\n', lineno - 1),
+							buf.pos() - find_nth(source, '\n', lineno - 1),
+							lineno
+						);
 						exit(-1);
 					}
 				}
@@ -321,8 +316,11 @@ std::vector<Token> tokenize(std::string source)
 				{
 					std::cerr << "Unterminated string at line " << lineno << '\n';
 					std::cerr << lineno << ": " << getSourceLine(source, lineno);
-					drawArrows(buf.pos() - find_nth(source, '\n', lineno - 1) - 2,
-							   buf.pos() - find_nth(source, '\n', lineno - 1) - 2);
+					drawArrows(
+						buf.pos() - find_nth(source, '\n', lineno - 1) - 2,
+						buf.pos() - find_nth(source, '\n', lineno - 1) - 2,
+						lineno
+					);
 					exit(-1);
 				}
 
@@ -347,15 +345,26 @@ std::vector<Token> tokenize(std::string source)
 		else if (isdigit(data))
 		{
 			std::string word = "";
-			word += data;
 
 			size_t start = buf.pos() - find_nth(source, '\n', lineno - 1);
 			size_t end = start;
 
-			while (isdigit(buf.next()))
+			while (buf.hasNext())
 			{
+				if (buf.current() == ';') break;
+
+				if (!isdigit(buf.current()))
+				{
+					std::cerr << "Error: Invalid number at line " << lineno << '\n';
+					std::cerr << lineno << ": " << getSourceLine(source, lineno) << '\n';
+					drawArrows(start, end, lineno);
+					exit(-1);
+				}
+
 				word += buf.current();
 				end++;
+
+				buf.advance();
 			}
 
 			toks.push_back(Token(lineno, TokenType::TT_NUM, word, start, end));
@@ -369,8 +378,8 @@ std::vector<Token> tokenize(std::string source)
 			std::cerr << lineno << ": " << getSourceLine(source, lineno);
 			size_t i = buf.pos() - find_nth(source, '\n', lineno - 1);
 			size_t j = source.find_first_of(' ', i);
-			std::cout << j << '\n';
-			drawArrows(i, j);
+			std::cerr << j << '\n';
+			drawArrows(i, j, lineno);
 			exit(-1);
 		}
 

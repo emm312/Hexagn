@@ -8,7 +8,9 @@
 #include <compiler/token.h>
 
 extern std::string glob_src;
-extern const std::string KEYWORDS[];
+extern const std::string SignedIntTypes[];
+extern const std::string UnsignedIntTypes[];
+extern const std::string FloatTypes[];
 
 class VarStack
 {

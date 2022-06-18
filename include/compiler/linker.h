@@ -7,20 +7,9 @@
 #include <compiler/token.h>
 #include <compiler/parser.h>
 
-class Linker
-{
-private:
-	Linker();
+extern std::vector<Function> linkerFunctions;
 
-public:
-	static std::vector<Function> functions;
-
-	Linker(const Linker&)         = delete;
-	void operator=(const Linker&) = delete;
-
-	static void addFunction(const Function& function);
-	static const Function getFunction(const Token& name, const std::vector<Token>& argTypes);
-
-};
+void linkerAddFunction(const Function& function);
+const Function linkerGetFunction(const Token& name, const std::vector<Token>& argTypes);
 
 #endif // LINKER_H

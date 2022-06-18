@@ -7,12 +7,12 @@
 #include <compiler/token.h>
 #include <util.h>
 
-std::vector<Function> Linker::functions;
+std::vector<Function> linkerFunctions;
 
-void Linker::addFunction(const Function& function)
+void linkerAddFunction(const Function& function)
 {
 	// Check for duplicate function
-	for (const auto& func: functions)
+	for (const auto& func: linkerFunctions)
 	{
 		if (func.getSignature() == function.getSignature())
 		{
@@ -22,14 +22,14 @@ void Linker::addFunction(const Function& function)
 			if (func.name.m_lineno != func.returnType.m_lineno)
 			{
 				std::cerr << func.name.m_lineno << ": " << getSourceLine(glob_src, func.name.m_lineno);
-				drawArrows(func.name.m_start, func.name.m_end);
+				drawArrows(func.name.m_start, func.name.m_end, func.name.m_lineno);
 			}
 			else
-				drawArrows(func.returnType.m_start, func.name.m_end);
+				drawArrows(func.returnType.m_start, func.name.m_end, func.returnType.m_lineno);
 			exit(-1);
 		}
 
-		if (func.returnType.toString() != function.returnType.toString() && func.argTypes == function.argTypes)
+		if (func.name.m_val == function.name.m_val && func.returnType.toString() != function.returnType.toString() && func.argTypes == function.argTypes)
 		{
 			std::cerr << "Cannot have functions with same arguments but different return types: " << function.name.m_val << '\n';
 			std::cerr << "Previous definition:\n";
@@ -37,25 +37,25 @@ void Linker::addFunction(const Function& function)
 			if (func.name.m_lineno != func.returnType.m_lineno)
 			{
 				std::cerr << func.name.m_lineno << ": " << getSourceLine(glob_src, func.name.m_lineno);
-				drawArrows(func.name.m_start, func.name.m_end);
+				drawArrows(func.name.m_start, func.name.m_end, func.name.m_lineno);
 			}
 			else
-				drawArrows(func.returnType.m_start, func.name.m_end);
+				drawArrows(func.returnType.m_start, func.name.m_end, func.name.m_lineno);
 			exit(-1);
 		}
 	}
 
-	functions.push_back(function);
+	linkerFunctions.push_back(function);
 }
 
-const Function Linker::getFunction(const Token& name, const std::vector<Token>& argTypes)
+const Function linkerGetFunction(const Token& name, const std::vector<Token>& argTypes)
 {
-	for (const auto& func: functions)
+	for (const auto& func: linkerFunctions)
 		if (func.name.m_val == name.m_val && func.argTypes == argTypes)
 			return func;
 
 	std::cerr << "Error: Function '" << name.m_val << "' does not exist\n";
 	std::cerr << name.m_lineno << ": " << getSourceLine(glob_src, name.m_lineno);
-	drawArrows(name.m_start, name.m_end);
+	drawArrows(name.m_start, name.m_end, name.m_lineno);
 	exit(-1);
 }

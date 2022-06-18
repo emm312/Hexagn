@@ -111,7 +111,6 @@ bool isOperator(const Token& tok)
 		case TokenType::TT_MINUS:
 		case TokenType::TT_MULT:
 		case TokenType::TT_DIV:
-		case TokenType::TT_POW:
 			return true;
 
 		default:
@@ -130,8 +129,6 @@ size_t getPriority(const Token& tok)
 		case TokenType::TT_DIV:
 		case TokenType::TT_MOD:
 			return 2;
-		case TokenType::TT_POW:
-			return 3;
 		default:
 			return 0;
 	}
@@ -227,6 +224,9 @@ std::string getOpName(const Token& tok)
 
 		case TokenType::TT_DIV:
 			return "DIV";
+		
+		case TokenType::TT_MOD:
+			return "MOD";
 
 		default:
 			return "";
@@ -250,7 +250,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 				{
 					std::cerr << "No such variable " << toks[0].m_val << " in current context at line " << toks[0].m_lineno << '\n';
 					std::cerr << toks[0].m_lineno << ": " << getSourceLine(glob_src, toks[0].m_lineno);
-					drawArrows(toks[0].m_start, toks[0].m_end);
+					drawArrows(toks[0].m_start, toks[0].m_end, toks[0].m_lineno);
 					exit(-1);
 				}
 
@@ -315,7 +315,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					{
 						std::cerr << "Error: No such variable " << next.m_val << " in current context at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -325,7 +325,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					{
 						std::cerr << "Error: No such variable " << next.m_val << " in current context at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -362,7 +362,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					{
 						std::cerr << "Error: No such variable " << next.m_val << " in current context at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -371,7 +371,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					{
 						std::cerr << "Error: No such variable " << next.m_val << " in current context at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -409,11 +409,23 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 	}
 }
 
-bool isNumericDatatype(const Token& tok)
+const inline bool isDataType(const Token& tok)
 {
-	return tok.m_val == "int8" || tok.m_val == "int16" || tok.m_val == "int32" || tok.m_val == "int64" ||
-		tok.m_val == "uint8" || tok.m_val == "uint16" || tok.m_val == "uint32" || tok.m_val == "uint64" ||
-		tok.m_val == "float32" || tok.m_val == "float64";
+	return tok.m_type == TokenType::TT_INT
+			|| tok.m_type == TokenType::TT_UINT
+			|| tok.m_type == TokenType::TT_FLOAT
+			|| tok.m_type == TokenType::TT_STRING
+			|| tok.m_type == TokenType::TT_CHARACTER;
+}
+
+const inline bool isIntegerDataType(const Token& tok)
+{
+	return tok.m_type == TokenType::TT_INT || tok.m_type == TokenType::TT_UINT;
+}
+
+const inline bool isFloatDataType(const Token& tok)
+{
+	return tok.m_type == TokenType::TT_FLOAT;
 }
 
 std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& funcArgs)
@@ -438,14 +450,18 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 		switch (current.m_type)
 		{
 			// Variable or function definition
-			case TokenType::TT_KEYWORD:
+			case TokenType::TT_INT:
+			case TokenType::TT_UINT:
+			case TokenType::TT_FLOAT:
+			case TokenType::TT_STRING:
+			case TokenType::TT_CHARACTER:
 			{
 				Token next = buf.next();
 				if (!buf.hasNext())
 				{
 					std::cerr << "Error: Expected identifier after keyword at line " << current.m_lineno << '\n';
 					std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
-					drawArrows(current.m_start, current.m_end);
+					drawArrows(current.m_start, current.m_end, current.m_lineno);
 					exit(-1);
 				}
 				const Token& identifier = buf.current();
@@ -455,7 +471,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 				{
 					std::cerr << "Error: Expected '=' or '(' at line " << next.m_lineno << '\n';
 					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-					drawArrows(next.m_start, next.m_end);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
 					exit(-1);
 				}
 
@@ -470,7 +486,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 					{
 						std::cerr << "Error: Expected expression after '=' at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -484,7 +500,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 					auto [val, _code] = parseExpr(expr, locals, funcArgs);
 					code << _code;
 
-					if (isNumericDatatype(current))
+					if (isIntegerDataType(current))
 					{
 						// Get the number in string current.m_val
 						// For example: int32 -> 32
@@ -498,12 +514,10 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						std::stringstream sizeStream;
 						sizeStream << "0x" << std::hex << size;
 
-						if (val == "R2")
-							code << "AND "    << val << ' ' << sizeStream.str() << '\n';
-						else
-							code << "AND R2 " << val << ' ' << sizeStream.str() << '\n';
+						code << "AND R2 " << val << ' ' << sizeStream.str() << '\n';
 						code << "PSH R2\n\n";
 					}
+
 					else
 					{
 						// Idk
@@ -523,7 +537,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 					{
 						std::cerr << "Error: Expected keyword or ')' at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -532,11 +546,11 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 					{
 						const Token& type = buf.current();
-						if (!buf.hasNext() || type.m_type != TokenType::TT_KEYWORD)
+						if (!buf.hasNext() || !isDataType(type))
 						{
 							std::cerr << "Error: Expected keyword or ')' at line " << type.m_lineno << '\n';
 							std::cerr << type.m_lineno << ": " << getSourceLine(glob_src, type.m_lineno);
-							drawArrows(type.m_start, type.m_end);
+							drawArrows(type.m_start, type.m_end, type.m_lineno);
 							exit(-1);
 						}
 
@@ -545,7 +559,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						{
 							std::cerr << "Error: Expected identifier after keyword at line " << next.m_lineno << '\n';
 							std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-							drawArrows(next.m_start, next.m_end);
+							drawArrows(next.m_start, next.m_end, next.m_lineno);
 							exit(-1);
 						}
 						const Token& identifier = buf.current();
@@ -559,7 +573,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						{
 							std::cerr << "Error: Expected ',' at line " << next.m_lineno << '\n';
 							std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-							drawArrows(next.m_start, next.m_end);
+							drawArrows(next.m_start, next.m_end, next.m_lineno);
 							exit(-1);
 						}
 						
@@ -569,7 +583,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						{
 							std::cerr << "Error: Expected ',' at line " << next.m_lineno << '\n';
 							std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-							drawArrows(next.m_start, next.m_end);
+							drawArrows(next.m_start, next.m_end, next.m_lineno);
 							exit(-1);
 						}
 
@@ -584,7 +598,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 					{
 						std::cerr << "Error: Expected '{' at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						std::cerr << std::to_string(next.m_type) << '\n';
 						exit(-1);
 					}
@@ -609,7 +623,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 
 					func.code = compile(body, debugSymbols, true, funcArgsStack).str();
 
-					Linker::addFunction(func);
+					linkerAddFunction(func);
 				}
 
 				break;
@@ -630,7 +644,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 				{
 					std::cerr << "Error: Expected '=' or function call at line " << next.m_lineno << '\n';
 					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-					drawArrows(next.m_start, next.m_end);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
 					exit(-1);
 				}
 
@@ -646,7 +660,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						{
 							std::cerr << "Error: No such variable '" << identifier.m_val << "' in current context at line " << identifier.m_lineno << '\n';
 							std::cerr << identifier.m_lineno << ": " << getSourceLine(glob_src, identifier.m_lineno);
-							drawArrows(identifier.m_start, identifier.m_end);
+							drawArrows(identifier.m_start, identifier.m_end, identifier.m_lineno);
 							exit(-1);
 						}
 					}
@@ -656,7 +670,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 					{
 						std::cerr << "Error: Expected expression after '=' at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -689,7 +703,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 					{
 						std::cerr << "Error: Expected identifier or ')' at line " << next.m_lineno << '\n';
 						std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-						drawArrows(next.m_start, next.m_end);
+						drawArrows(next.m_start, next.m_end, next.m_lineno);
 						exit(-1);
 					}
 
@@ -705,7 +719,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						{
 							std::cerr << "Error: Expected identifier or value at line " << buf.current().m_lineno << '\n';
 							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
-							drawArrows(buf.current().m_start, buf.current().m_end);
+							drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
 							exit(-1);
 						}
 
@@ -713,7 +727,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						{
 							std::cerr << "Error: No such variable '" << current.m_val << "' in current context at line " << current.m_lineno << '\n';
 							std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
-							drawArrows(current.m_start, current.m_end);
+							drawArrows(current.m_start, current.m_end, current.m_lineno);
 							exit(-1);
 						}
 
@@ -733,7 +747,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						{
 							std::cerr << "Error: Expected ',' or ')' at line " << buf.current().m_lineno << '\n';
 							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
-							drawArrows(buf.current().m_start, buf.current().m_end);
+							drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
 							exit(-1);
 						}
 
@@ -754,7 +768,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 							{
 								std::cerr << "Error: No such variable '" << arg.m_val << "' in current context at line " << arg.m_lineno << '\n';
 								std::cerr << arg.m_lineno << ": " << getSourceLine(glob_src, arg.m_lineno);
-								drawArrows(arg.m_start, arg.m_end);
+								drawArrows(arg.m_start, arg.m_end, arg.m_lineno);
 								exit(-1);
 							}
 
@@ -766,7 +780,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						code << "PSH " << val << '\n';
 					}
 
-					const Function& func = Linker::getFunction(current, argTypes);
+					const Function& func = linkerGetFunction(current, argTypes);
 
 					code << "CAL ." << func.getSignature() << '\n';
 
@@ -788,7 +802,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 	if (!isFunc)
 	{
 		code << "\nCAL .main();int8\nMOV SP R1\nHLT\n\n";
-		for (const auto& func: Linker::functions)
+		for (const auto& func: linkerFunctions)
 		{
 			code << "." << func.getSignature() << '\n';
 

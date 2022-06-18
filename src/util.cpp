@@ -45,11 +45,12 @@ std::vector<std::string> split(std::string str, char sep)
 	return res;
 }
 
-void drawArrows(size_t start, size_t end)
+void drawArrows(size_t start, size_t end, const size_t& lineno)
 {
 	// Offset due to adding line number on the left
-	start += 3;
-	end   += 3;
+	const size_t& offset = std::to_string(lineno).length() + 2;
+	start += offset;
+	end   += offset;
 
 	std::cerr << "\033[31m";
 	for (size_t i = 0; i < start; ++i)	  std::cerr << ' ';
@@ -90,30 +91,30 @@ namespace std
 	{
 		switch (tokenType)
 		{
-			case TokenType::TT_KEYWORD:
-				return "KEYWORD";
+			// case TokenType::TT_KEYWORD:
+			// 	return "KEYWORD";
 
 			case TokenType::TT_IDENTIFIER:
 				return "IDENTIFIER";
-			
+
 			case TokenType::TT_ASSIGN:
 				return "ASSIGNMENT";
-			
+
 			case TokenType::TT_NUM:
 				return "NUMBER";
-			
+
 			case TokenType::TT_FLOAT:
 				return "FLOAT";
-			
+
 			case TokenType::TT_STR:
 				return "STRING";
-			
+
 			case TokenType::TT_CHAR:
 				return "CHAR";
-			
+
 			case TokenType::TT_OPEN_PAREN:
 				return "OPEN_PAREN";
-			
+
 			case TokenType::TT_CLOSE_PAREN:
 				return "CLOSE_PAREN";
 
@@ -122,28 +123,25 @@ namespace std
 
 			case TokenType::TT_SEMICOLON:
 				return "SEMICOLON";
-			
+
 			case TokenType::TT_PLUS:
 				return "PLUS";
-			
+
 			case TokenType::TT_MINUS:
 				return "MINUS";
 
 			case TokenType::TT_MULT:
 				return "MULT";
-			
+
 			case TokenType::TT_DIV:
 				return "DIV";
-			
-			case TokenType::TT_POW:
-				return "POW";
-			
+
 			case TokenType::TT_OPEN_BRACE:
 				return "OPEN_BRACE";
-			
+
 			case TokenType::TT_CLOSE_BRACE:
 				return "CLOSE_BRACE";
-			
+
 			default:
 				return "Unknown";
 		}

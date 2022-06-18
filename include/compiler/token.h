@@ -5,11 +5,19 @@
 
 enum class TokenType: size_t
 {
-	TT_KEYWORD,
+	// Builtin datatypes
+	TT_VOID,
+	TT_INT,
+	TT_UINT,
+	TT_FLOAT,
+	TT_STRING,
+	TT_CHARACTER,
+
+	// Other stuff
 	TT_IDENTIFIER,
 	TT_ASSIGN,
 	TT_NUM,
-	TT_FLOAT,
+	TT_FLT,
 	TT_STR,
 	TT_CHAR,
 
@@ -23,7 +31,6 @@ enum class TokenType: size_t
 	TT_MINUS,
 	TT_MULT,
 	TT_DIV,
-	TT_POW,
 	TT_MOD,
 
 	TT_OPEN_BRACE,

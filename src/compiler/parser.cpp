@@ -427,7 +427,7 @@ const inline bool isFloatDataType(const Token& tok)
 {
 	return tok.m_type == TokenType::TT_FLOAT;
 }
-
+std::vector<std::string> global_variables;
 std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& funcArgs)
 {
 	TokenBuffer buf(tokens);
@@ -518,10 +518,31 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						code << "PSH R2\n\n";
 					}
 
-					else
+					else if (current.m_type == TokenType::TT_STRING)
 					{
-						// Idk
-						// Help what do i do here
+						std::stringstream signature;
+						signature << ".str"
+						 << '_'  << identifier.m_val << '\n';
+
+						// Set the value of the string
+						std::string string = expr[0].m_val;
+
+						// Set DWString to the string, and add a 0 to the end
+						std::stringstream DWString;
+						DWString << "DW [ " << '"' << string << '"' << " 0 ]\n";
+
+						// Combine DWString and signature
+						std::stringstream string_definition;					 
+						string_definition << signature.str() << DWString.str();
+
+						// Put definition to stacc
+						code << "MOV R2 " << signature.str() << '\n' << "PSH R2\n\n";
+
+						// Add the string to the global variables list, so it can be compiled later
+						global_variables.push_back(string_definition.str());
+					} else if (current.m_type == TokenType::TT_CHARACTER) 
+					{
+						code << "IMM R2 " << (int) expr[0].m_val[0] << "\nPSH R2\n\n";
 					}
 
 					locals.push(identifier.m_val, current);
@@ -813,6 +834,9 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 
 			// cdecl calling convention exit
 			code << "MOV SP R1\nPOP R1\nRET\n\n";
+		}
+		for (auto variable : global_variables) {
+			code << variable;
 		}
 	}
 

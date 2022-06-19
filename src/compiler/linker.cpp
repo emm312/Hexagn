@@ -7,7 +7,7 @@
 #include <compiler/token.h>
 #include <util.h>
 
-std::vector<Function> linkerFunctions;
+static std::vector<Function> linkerFunctions;
 
 void linkerAddFunction(const Function& function)
 {
@@ -58,4 +58,9 @@ const Function linkerGetFunction(const Token& name, const std::vector<Token>& ar
 	std::cerr << name.m_lineno << ": " << getSourceLine(glob_src, name.m_lineno);
 	drawArrows(name.m_start, name.m_end, name.m_lineno);
 	exit(-1);
+}
+
+const std::vector<Function>& linkerGetFunctions()
+{
+	return linkerFunctions;
 }

@@ -16,6 +16,12 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 
 	// File stream to read input file
 	std::ifstream inputFileStream(inputFileName);
+
+	if (!inputFileStream.is_open())
+	{
+		std::cout << "Error: Could not open input file: " << inputFileName << '\n';
+		exit(-1);
+	}
 	
 	// Get all non-comment tokens into src
 	std::string str;

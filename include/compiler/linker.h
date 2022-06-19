@@ -7,9 +7,8 @@
 #include <compiler/token.h>
 #include <compiler/parser.h>
 
-extern std::vector<Function> linkerFunctions;
-
 void linkerAddFunction(const Function& function);
 const Function linkerGetFunction(const Token& name, const std::vector<Token>& argTypes);
+const std::vector<Function>& linkerGetFunctions();
 
 #endif // LINKER_H

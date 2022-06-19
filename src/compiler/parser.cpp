@@ -7,9 +7,10 @@
 #include <ranges>
 #include <math.h>
 
+#include <util.h>
 #include <compiler/parser.h>
 #include <compiler/linker.h>
-#include <util.h>
+#include <compiler/string.h>
 
 class TokenBuffer
 {
@@ -427,7 +428,7 @@ const inline bool isFloatDataType(const Token& tok)
 {
 	return tok.m_type == TokenType::TT_FLOAT;
 }
-std::vector<std::string> global_variables;
+
 std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& funcArgs)
 {
 	TokenBuffer buf(tokens);
@@ -520,28 +521,33 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 
 					else if (current.m_type == TokenType::TT_STRING)
 					{
-						std::stringstream signature;
-						signature << ".str"
-						 << '_'  << identifier.m_val << '\n';
+						if (expr[0].m_type != TokenType::TT_STR)
+						{
+							std::cerr << "Error: Expected string literal at line " << expr[0].m_lineno << '\n';
+							std::cerr << expr[0].m_lineno << ": " << getSourceLine(glob_src, expr[0].m_lineno);
+							drawArrows(expr[0].m_start, expr[0].m_end, expr[0].m_lineno);
+							exit(-1);
+						}
 
-						// Set the value of the string
-						std::string string = expr[0].m_val;
+						const std::string& string = expr[0].m_val;
 
-						// Set DWString to the string, and add a 0 to the end
-						std::stringstream DWString;
-						DWString << "DW [ " << '"' << string << '"' << " 0 ]\n";
-
-						// Combine DWString and signature
-						std::stringstream string_definition;					 
-						string_definition << signature.str() << DWString.str();
+						// Register the string into the string table and get the signature
+						const std::string signature = registerString(string);
 
 						// Put definition to stacc
-						code << "MOV R2 " << signature.str() << '\n' << "PSH R2\n\n";
+						code << "MOV R2 " << signature << "\nPSH R2\n\n";
+					}
 
-						// Add the string to the global variables list, so it can be compiled later
-						global_variables.push_back(string_definition.str());
-					} else if (current.m_type == TokenType::TT_CHARACTER) 
+					else if (current.m_type == TokenType::TT_CHARACTER)
 					{
+						if (expr[0].m_type != TokenType::TT_CHAR)
+						{
+							std::cerr << "Error: Expected character literal at line " << expr[0].m_lineno << '\n';
+							std::cerr << expr[0].m_lineno << ": " << getSourceLine(glob_src, expr[0].m_lineno);
+							drawArrows(expr[0].m_start, expr[0].m_end, expr[0].m_lineno);
+							exit(-1);
+						}
+
 						code << "IMM R2 " << (int) expr[0].m_val[0] << "\nPSH R2\n\n";
 					}
 
@@ -823,7 +829,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 	if (!isFunc)
 	{
 		code << "\nCAL .main();int8\nMOV SP R1\nHLT\n\n";
-		for (const auto& func: linkerFunctions)
+		for (const auto& func: linkerGetFunctions())
 		{
 			code << "." << func.getSignature() << '\n';
 
@@ -835,8 +841,10 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 			// cdecl calling convention exit
 			code << "MOV SP R1\nPOP R1\nRET\n\n";
 		}
-		for (auto variable : global_variables) {
-			code << variable;
+
+		for (const auto& str: getStrings())
+		{
+			code << str << "\n\n";
 		}
 	}
 

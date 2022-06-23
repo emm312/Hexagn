@@ -7,9 +7,7 @@
 #include <compiler/token.h>
 #include <util.h>
 
-static std::vector<Function> linkerFunctions;
-
-void linkerAddFunction(const Function& function)
+void Linker::addFunction(const Function& function)
 {
 	// Check for duplicate function
 	for (const auto& func: linkerFunctions)
@@ -48,7 +46,7 @@ void linkerAddFunction(const Function& function)
 	linkerFunctions.push_back(function);
 }
 
-const Function linkerGetFunction(const Token& name, const std::vector<Token>& argTypes)
+const Function Linker::getFunction(const Token& name, const std::vector<Token>& argTypes) const
 {
 	for (const auto& func: linkerFunctions)
 		if (func.name.m_val == name.m_val && func.argTypes == argTypes)
@@ -60,7 +58,7 @@ const Function linkerGetFunction(const Token& name, const std::vector<Token>& ar
 	exit(-1);
 }
 
-const std::vector<Function>& linkerGetFunctions()
+const std::vector<Function>& Linker::getFunctions() const
 {
 	return linkerFunctions;
 }

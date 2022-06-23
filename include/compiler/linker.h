@@ -7,8 +7,16 @@
 #include <compiler/token.h>
 #include <compiler/parser.h>
 
-void linkerAddFunction(const Function& function);
-const Function linkerGetFunction(const Token& name, const std::vector<Token>& argTypes);
-const std::vector<Function>& linkerGetFunctions();
+class Linker
+{
+private:
+	std::vector<Function> linkerFunctions;
+
+public:
+	void addFunction(const Function& function);
+	const Function getFunction(const Token& name, const std::vector<Token>& argTypes) const;
+	const std::vector<Function>& getFunctions() const;
+
+};
 
 #endif // LINKER_H

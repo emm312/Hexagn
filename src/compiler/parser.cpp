@@ -429,6 +429,8 @@ const inline bool isFloatDataType(const Token& tok)
 	return tok.m_type == TokenType::TT_FLOAT;
 }
 
+Linker hexagnMainLinker;
+
 std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& funcArgs)
 {
 	TokenBuffer buf(tokens);
@@ -650,7 +652,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 
 					func.code = compile(body, debugSymbols, true, funcArgsStack).str();
 
-					linkerAddFunction(func);
+					hexagnMainLinker.addFunction(func);
 				}
 
 				break;
@@ -807,7 +809,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						code << "PSH " << val << '\n';
 					}
 
-					const Function& func = linkerGetFunction(current, argTypes);
+					const Function& func = hexagnMainLinker.getFunction(current, argTypes);
 
 					code << "CAL ." << func.getSignature() << '\n';
 
@@ -829,7 +831,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 	if (!isFunc)
 	{
 		code << "\nCAL .main();int8\nMOV SP R1\nHLT\n\n";
-		for (const auto& func: linkerGetFunctions())
+		for (const auto& func: hexagnMainLinker.getFunctions())
 		{
 			code << "." << func.getSignature() << '\n';
 
@@ -843,9 +845,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 		}
 
 		for (const auto& str: getStrings())
-		{
 			code << str << "\n\n";
-		}
 	}
 
 	return code;

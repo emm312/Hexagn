@@ -89,16 +89,6 @@ struct VarStackFrame
 	std::string code;
 };
 
-const std::string Function::getSignature() const
-{
-	std::stringstream ss;
-	ss << name.m_val << "(";
-	for (const auto& arg: argTypes)
-		ss << arg.m_val << ';';
-	ss << ");" << returnType.m_val;
-	return ss.str();
-}
-
 bool operator ==(const Token& lhs, const Token& rhs)
 {
 	return lhs.m_type == rhs.m_type && lhs.m_val == rhs.m_val;
@@ -412,7 +402,8 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 
 const inline bool isDataType(const Token& tok)
 {
-	return tok.m_type == TokenType::TT_INT
+	return tok.m_type == TokenType::TT_VOID
+			|| tok.m_type == TokenType::TT_INT
 			|| tok.m_type == TokenType::TT_UINT
 			|| tok.m_type == TokenType::TT_FLOAT
 			|| tok.m_type == TokenType::TT_STRING
@@ -453,6 +444,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 		switch (current.m_type)
 		{
 			// Variable or function definition
+			case TokenType::TT_VOID:
 			case TokenType::TT_INT:
 			case TokenType::TT_UINT:
 			case TokenType::TT_FLOAT:
@@ -481,6 +473,14 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 				// Variable definition
 				if (next.m_type == TokenType::TT_ASSIGN)
 				{
+					if (current.m_type == TokenType::TT_VOID)
+					{
+						std::cerr << "Error: Cannot have void type for variable at line " + current.m_lineno << '\n';
+						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+						drawArrows(current.m_start, current.m_end, current.m_lineno);
+						exit(-1);
+					}
+
 					if (debugSymbols)
 						code << "// " << getSourceLine(glob_src, current.m_lineno);
 
@@ -722,11 +722,6 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 				// Function call
 				else if (next.m_type == TokenType::TT_OPEN_PAREN)
 				{
-					bool (*isVal)(const Token&) = [](const Token& tok)
-					{
-						return tok.m_type == TokenType::TT_NUM || tok.m_type == TokenType::TT_FLOAT || tok.m_type == TokenType::TT_STR || tok.m_type == TokenType::TT_CHAR;
-					};
-
 					buf.advance();
 					if (!buf.hasNext())
 					{
@@ -736,15 +731,13 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 						exit(-1);
 					}
 
-					/**
-					 * @brief Append function arguments in loop
-					 */
+					// Append function arguments in loop
 					std::vector<Token> args;
 					std::vector<Token> argTypes;
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 					{
 						const Token& current = buf.current();
-						if (!buf.hasNext() || (current.m_type != TokenType::TT_IDENTIFIER && !isVal(current)))
+						if (!buf.hasNext() || (current.m_type != TokenType::TT_IDENTIFIER && !isDataType(current)))
 						{
 							std::cerr << "Error: Expected identifier or value at line " << buf.current().m_lineno << '\n';
 							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
@@ -830,7 +823,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 
 	if (!isFunc)
 	{
-		code << "\nCAL .main();int8\nMOV SP R1\nHLT\n\n";
+		code << "\nCAL ._Hx4main\nMOV SP R1\nHLT\n\n";
 		for (const auto& func: hexagnMainLinker.getFunctions())
 		{
 			code << "." << func.getSignature() << '\n';

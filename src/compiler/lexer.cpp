@@ -220,7 +220,7 @@ std::vector<Token> tokenize(std::string source)
 
 		else if (data == '\'')
 		{
-			const size_t& start = buf.pos();
+			const size_t& start = buf.pos() - find_nth(source, '\n', lineno - 1);
 
 			buf.advance();
 			char _char;
@@ -266,14 +266,14 @@ std::vector<Token> tokenize(std::string source)
 				exit(-1);
 			}
 
-			const size_t& end = buf.pos();
+			const size_t& end = buf.pos() - find_nth(source, '\n', lineno - 1);
 
 			toks.push_back(Token(lineno, TokenType::TT_CHAR, std::string(1, _char), start, end));
 		}
 
 		else if (data == '"')
 		{
-			const size_t& start = buf.pos();
+			const size_t& start = buf.pos() - find_nth(source, '\n', lineno - 1);
 
 			std::string str;
 
@@ -330,7 +330,7 @@ std::vector<Token> tokenize(std::string source)
 				buf.advance();
 			}
 
-			const size_t& end = buf.pos();
+			const size_t& end = buf.pos() - find_nth(source, '\n', lineno - 1);
 
 			toks.push_back(Token(lineno, TokenType::TT_STR, str, start, end));
 		}
@@ -354,12 +354,7 @@ std::vector<Token> tokenize(std::string source)
 				if (buf.current() == ';') break;
 
 				if (!isdigit(buf.current()))
-				{
-					std::cerr << "Error: Invalid number at line " << lineno << '\n';
-					std::cerr << lineno << ": " << getSourceLine(source, lineno) << '\n';
-					drawArrows(start, end, lineno);
-					exit(-1);
-				}
+					break;
 
 				word += buf.current();
 				end++;

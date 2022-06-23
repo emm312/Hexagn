@@ -1,11 +1,67 @@
 #include <compiler/linker.h>
 
 #include <iostream>
-#include <string>
-#include <vector>
 
+#include <compiler/parser.h>
 #include <compiler/token.h>
 #include <util.h>
+
+struct LenghtEncodedType
+{
+	const size_t len;
+	const std::string val;
+};
+
+const LenghtEncodedType encodeType(const Token& typeName)
+{
+	const size_t len = typeName.m_val.length();
+	(void) len; // Temporary
+
+	switch (typeName.m_type)
+	{
+		case TokenType::TT_VOID: return { len, "v" };
+		case TokenType::TT_INT:
+		{
+			if (typeName.m_val == "int8")  return { size_t(-1), "i8"  };
+			if (typeName.m_val == "int16") return { size_t(-1), "i16" };
+			if (typeName.m_val == "int32") return { size_t(-1), "i32" };
+		}
+		case TokenType::TT_UINT:
+		{
+			if (typeName.m_val == "uint8")  return { size_t(-1), "u8"  };
+			if (typeName.m_val == "uint16") return { size_t(-1), "u16" };
+			if (typeName.m_val == "uint32") return { size_t(-1), "u32" };
+		}
+		case TokenType::TT_FLOAT:
+		{
+			if (typeName.m_val == "float32") return { size_t(-1), "f32" };
+			if (typeName.m_val == "float64") return { size_t(-1), "f64" };
+		}
+		case TokenType::TT_STRING:    return { size_t(-1), "s" };
+		case TokenType::TT_CHARACTER: return { size_t(-1), "c" };
+		
+		default:
+			return { 0, "" };
+	}
+}
+
+const std::string Function::getSignature() const
+{
+	std::stringstream ss;
+
+	ss << "_Hx" /* Hexagn mangled name signature */ << name.m_val.length() << name.m_val;
+
+	for (const auto& arg: argTypes)
+	{
+		const LenghtEncodedType& var = encodeType(arg);
+		if (var.len == size_t(-1))
+			ss << var.val;
+		else
+			ss << '_' << var.len << var.val;
+	}
+
+	return ss.str();
+}
 
 void Linker::addFunction(const Function& function)
 {

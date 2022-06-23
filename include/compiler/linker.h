@@ -1,7 +1,6 @@
 #ifndef LINKER_H
 #define LINKER_H
 
-#include <string>
 #include <vector>
 
 #include <compiler/token.h>

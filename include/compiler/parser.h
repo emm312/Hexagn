@@ -44,6 +44,9 @@ struct Function
 
 bool operator ==(const Token& lhs, const Token& rhs);
 
+// Will be used by the library parser thing to add library functions to the main linker
+class Linker; // Forward declaration to avoid cyclic includes
+extern Linker hexagnMainLinker;
 std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc = false, const VarStack& funcArgs = VarStack());
 
 #endif // PARSER_H

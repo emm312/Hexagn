@@ -90,46 +90,35 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 
 	size_t start = buf.pos() - find_nth(source, '\n', lineno - 1);
 	size_t end = start;
+
+	while (buf.hasNext())
+	{
+		const char& curr = buf.current();
+
+		if (curr == ' ')                                  break;
+		if (!isalnum(curr) && curr != '_' && curr != '-') break;
+
+		word += curr;
+		end++;
+
+		buf.advance();
+	}
+
+	if (word == "void") return { TokenType::TT_VOID, word, start, end };
+
+	else if (std::find(std::begin(SignedIntTypes), std::end(SignedIntTypes), word) != std::end(SignedIntTypes))
+		return { TokenType::TT_INT, word, start, end };
 	
-	// Is keyword or identifier
-	if (isalpha(data) || data == '_')
-	{
-		while (buf.hasNext())
-		{
-			if (!isalnum(buf.current()))
-				break;
+	else if (std::find(std::begin(UnsignedIntTypes), std::end(UnsignedIntTypes), word) != std::end(UnsignedIntTypes))
+		return { TokenType::TT_UINT, word, start, end };
 
-			word += buf.current();
-			end++;
+	else if (std::find(std::begin(FloatTypes), std::end(FloatTypes), word) != std::end(FloatTypes))
+		return { TokenType::TT_FLOAT, word, start, end };
 
-			buf.advance();
-		}
+	else if (word == "string") return { TokenType::TT_STRING,    word, start, end };
+	else if (word == "char")   return { TokenType::TT_CHARACTER, word, start, end };
 
-		if (word == "void") return { TokenType::TT_VOID, word, start, end };
-
-		else if (std::find(std::begin(SignedIntTypes), std::end(SignedIntTypes), word) != std::end(SignedIntTypes))
-			return { TokenType::TT_INT, word, start, end };
-		
-		else if (std::find(std::begin(UnsignedIntTypes), std::end(UnsignedIntTypes), word) != std::end(UnsignedIntTypes))
-			return { TokenType::TT_UINT, word, start, end };
-
-		else if (std::find(std::begin(FloatTypes), std::end(FloatTypes), word) != std::end(FloatTypes))
-			return { TokenType::TT_FLOAT, word, start, end };
-
-		else if (word == "string") return { TokenType::TT_STRING,    word, start, end };
-		else if (word == "char")   return { TokenType::TT_CHARACTER, word, start, end };
-
-		else return { TokenType::TT_IDENTIFIER, word, start, end };
-	}
-
-	// Invalid character
-	else
-	{
-		std::cerr << "Invalid character at line " << lineno << '\n';
-		std::cerr << lineno << ": " << getSourceLine(source, lineno);
-		drawArrows(start, end, lineno);
-		exit(-1);
-	}
+	else return { TokenType::TT_IDENTIFIER, word, start, end };
 }
 
 std::vector<Token> tokenize(std::string source)
@@ -335,7 +324,7 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_STR, str, start, end));
 		}
 
-		else if (isalpha(data))
+		else if (isalpha(data) || data == '_')
 		{
 			auto [type, word, start, end] = makeWord(data, buf, source, lineno);
 			toks.push_back(Token(lineno, type, word, start, end));
@@ -373,7 +362,6 @@ std::vector<Token> tokenize(std::string source)
 			std::cerr << lineno << ": " << getSourceLine(source, lineno);
 			size_t i = buf.pos() - find_nth(source, '\n', lineno - 1);
 			size_t j = source.find_first_of(' ', i);
-			std::cerr << j << '\n';
 			drawArrows(i, j, lineno);
 			exit(-1);
 		}

@@ -1,6 +1,8 @@
 /obj/
-/hexagn
 /.vscode/
-/out.urcl
-/test.hxgn
+
+/hexagn
 /hexagn.exe
+
+/test.hxgn
+/out.urcl

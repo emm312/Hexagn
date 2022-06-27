@@ -830,51 +830,55 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 							}
 							buf.next();
 							if (buf.current().m_type == TokenType::TT_COMPARISON) {
-									if (buf.current().m_val == "==") {
-										buf.next();
-										if (buf.current().m_type != TokenType::TT_NUM) {
-											std::cerr << "Error: Expected integer or identifier at line " << buf.current().m_lineno << '\n';
-											std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
-											drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
-											exit(-1);
+								std::string instruction;
+								if (buf.current().m_val == "==") { instruction = "BRE"; }
+								if (buf.current().m_val == ">") { instruction = "BRG"; }
+								if (buf.current().m_val == "<") { instruction = "BRL"; }
+								if (buf.current().m_val == ">=") { instruction = "BGE"; }
+								if (buf.current().m_val == "<=") { instruction = "BLE"; }
+								if (buf.current().m_val == "!=") { instruction = "BNE"; }
+								buf.next();
+								if (buf.current().m_type != TokenType::TT_NUM && buf.current().m_type != TokenType::TT_IDENTIFIER) {
+									std::cerr << "Error: Expected integer or identifier at line " << buf.current().m_lineno << '\n';
+									std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+									drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+									exit(-1);
+								}
+								if (buf.current().m_type == TokenType::TT_IDENTIFIER) {
+									code << "LLOD R" << destCounter << " R1 " << "-" << locals.getOffset(buf.current().m_val) << '\n';
+									destCounter++;
+								} else if (buf.current().m_type == TokenType::TT_NUM) {
+									code << "IMM R" << destCounter << " " << buf.current().m_val << '\n';
+									destCounter++;
+								}
+								code << instruction << " " << ".if_" << ifCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+								code << "JMP .endif"<< ifCount << '\n';
+								code << ".if_"<< ifCount << "\n";
+								
+								buf.next();
+								if (buf.current().m_type == TokenType::TT_CLOSE_PAREN) {
+									std::vector<Token> body;
+									size_t scope = 0;
+									while (buf.hasNext()) {
+										if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
+											++scope;
+										else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE) {
+											--scope;
+											if (scope == 0)
+												break;
 										}
-										if (buf.current().m_type == TokenType::TT_IDENTIFIER) {
-											code << "LLOD R" << destCounter << " R1 " << "-" << locals.getOffset(buf.current().m_val) << '\n';
-											destCounter++;
-										} else if (buf.current().m_type == TokenType::TT_NUM) {
-											code << "IMM R" << destCounter << " " << buf.current().m_val << '\n';
-											destCounter++;
-										}
-										code << "BRE " << ".if_" << ifCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
-										code << "JMP .endif"<< ifCount << '\n';
-										code << ".if_"<< ifCount << "\n";
-										
-										buf.next();
-										if (buf.current().m_type == TokenType::TT_CLOSE_PAREN) {
-											std::vector<Token> body;
-											size_t scope = 0;
-											while (buf.hasNext()) {
-												if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
-													++scope;
-												else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE) {
-													--scope;
-													if (scope == 0)
-														break;
-												}
-												body.push_back(buf.current());
-												buf.advance();
-											}
-											std::string outcode = compile(body, debugSymbols, true, locals).str();
-											code << outcode;
-											code << ".endif" << ifCount << '\n';
-										} else {
-											std::cerr << "Error: Expected ')' at line " << buf.current().m_lineno << '\n';
-											std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
-											drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
-											exit(-1);
-										}
-										
+										body.push_back(buf.current());
+										buf.advance();
 									}
+									std::string outcode = compile(body, debugSymbols, true, locals).str();
+									code << outcode;
+									code << ".endif" << ifCount << '\n';
+								} else {
+									std::cerr << "Error: Expected ')' at line " << buf.current().m_lineno << '\n';
+									std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+									drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+									exit(-1);
+								}
 							} else {
 								std::cerr << "Error: Expected comparison operator at line " << buf.current().m_lineno << '\n';
 								std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);

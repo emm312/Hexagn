@@ -3,9 +3,9 @@ OBJS = ${SOURCES:.cpp=.o}
 
 CXX = g++		# Change to clang++ if using clang
 
-CFLAGS = -I./include -O3 -Wall -std=c++20 -g --static
+CFLAGS = -I./include -O3 -Wall -std=c++20 -g
 
-hexagn: $(OBJS)
+hexagn: pre-build $(OBJS)
 	$(CXX) $(CFLAGS) obj/*.o -o $@
 
 %.o: %.cpp

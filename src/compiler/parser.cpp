@@ -440,7 +440,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 	while (buf.hasNext())
 	{
 		const Token& current = buf.current();
-
+		int ifCount = 0;
 		switch (current.m_type)
 		{
 			// Variable or function definition
@@ -813,6 +813,94 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 				break;
 			}
 
+			case TokenType::TT_IF: {
+				ifCount+=1;
+				int destCounter = 2;
+				if (buf.hasNext()) {
+					buf.next();
+					if (buf.current().m_type == TokenType::TT_OPEN_PAREN) {
+						buf.next();
+						if (buf.current().m_type == TokenType::TT_IDENTIFIER || buf.current().m_type == TokenType::TT_NUM) {
+							if (buf.current().m_type == TokenType::TT_IDENTIFIER) {
+								code << "LLOD R" << destCounter << " R1 " << "-" << locals.getOffset(buf.current().m_val) << '\n';
+								destCounter++;
+							} else if (buf.current().m_type == TokenType::TT_NUM) {
+								code << "IMM R" << destCounter << " " << buf.current().m_val << '\n';
+								destCounter++;
+							}
+							buf.next();
+							if (buf.current().m_type == TokenType::TT_COMPARISON) {
+									if (buf.current().m_val == "==") {
+										buf.next();
+										if (buf.current().m_type != TokenType::TT_NUM) {
+											std::cerr << "Error: Expected integer or identifier at line " << buf.current().m_lineno << '\n';
+											std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+											drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+											exit(-1);
+										}
+										if (buf.current().m_type == TokenType::TT_IDENTIFIER) {
+											code << "LLOD R" << destCounter << " R1 " << "-" << locals.getOffset(buf.current().m_val) << '\n';
+											destCounter++;
+										} else if (buf.current().m_type == TokenType::TT_NUM) {
+											code << "IMM R" << destCounter << " " << buf.current().m_val << '\n';
+											destCounter++;
+										}
+										code << "BRE " << ".if_" << ifCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+										code << "JMP .endif"<< ifCount << '\n';
+										code << ".if_"<< ifCount << "\n";
+										
+										buf.next();
+										if (buf.current().m_type == TokenType::TT_CLOSE_PAREN) {
+											std::vector<Token> body;
+											size_t scope = 0;
+											while (buf.hasNext()) {
+												if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
+													++scope;
+												else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE) {
+													--scope;
+													if (scope == 0)
+														break;
+												}
+												body.push_back(buf.current());
+												buf.advance();
+											}
+											std::string outcode = compile(body, debugSymbols, true, locals).str();
+											code << outcode;
+											code << ".endif" << ifCount << '\n';
+										} else {
+											std::cerr << "Error: Expected ')' at line " << buf.current().m_lineno << '\n';
+											std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+											drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+											exit(-1);
+										}
+										
+									}
+							} else {
+								std::cerr << "Error: Expected comparison operator at line " << buf.current().m_lineno << '\n';
+								std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+								drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+								exit(-1);
+							}
+						} else if (buf.current().m_type == TokenType::TT_STR) {
+							std::cerr << "Error: String comparisons are not supported yet. line: " << buf.current().m_lineno << '\n';
+							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+							drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+							exit(-1);
+						} else {
+							std::cerr << "Expected identifier or value at line " << buf.current().m_lineno << '\n';
+							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+							drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+							exit(-1);
+						}
+					} else {
+						std::cerr << "Error: Expected '(' at line " << buf.current().m_lineno << '\n';
+						std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+						drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+						exit(-1);
+					}
+				}
+			}
+
 			case TokenType::TT_SEMICOLON: break;
 
 			default: break;
@@ -829,7 +917,7 @@ std::stringstream compile(const std::vector<Token>& tokens, const bool& debugSym
 			code << "." << func.getSignature() << '\n';
 
 			// cdecl calling convention entry
-			code << "PSH R1\nMOV R1 SP\n\n";
+			code << "PSH R1\nMOV R1 SP\n\n\n";
 
 			code << func.code;
 

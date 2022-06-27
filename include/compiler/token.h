@@ -35,6 +35,11 @@ enum class TokenType: size_t
 
 	TT_OPEN_BRACE,
 	TT_CLOSE_BRACE,
+
+	TT_IF,
+	TT_ELSE,
+
+	TT_COMPARISON,
 };
 
 extern const std::string KEYWORDS[];

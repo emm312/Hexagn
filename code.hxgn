@@ -1,0 +1,11 @@
+
+int8 main() {
+  int8 x = 1;
+  if (x==1) {
+    int8 f = x + 3;
+  }
+  if (x==2) {
+    int8 f = x + 3;
+  }
+
+}

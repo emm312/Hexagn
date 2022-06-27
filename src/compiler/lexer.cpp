@@ -118,7 +118,8 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 
 		else if (word == "string") return { TokenType::TT_STRING,    word, start, end };
 		else if (word == "char")   return { TokenType::TT_CHARACTER, word, start, end };
-
+		else if (word == "if") return { TokenType::TT_IF, word, start, end };
+		else if (word == "else") return { TokenType::TT_ELSE, word, start, end };
 		else return { TokenType::TT_IDENTIFIER, word, start, end };
 	}
 
@@ -159,10 +160,17 @@ std::vector<Token> tokenize(std::string source)
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
 
-		else if (data == '=')
-			toks.push_back(Token(lineno, TokenType::TT_ASSIGN, std::string(1, data),
-								 buf.pos() - find_nth(source, '\n', lineno - 1),
-								 buf.pos() - find_nth(source, '\n', lineno - 1)));
+		else if (data == '=') {
+			// check if it's a = or ==
+			if (buf.hasNext() && buf.next() == '=')
+				toks.push_back(Token(lineno, TokenType::TT_COMPARISON, "==",
+									 buf.pos() - find_nth(source, '\n', lineno - 1),
+									 buf.pos() - find_nth(source, '\n', lineno - 1)));
+			else
+				toks.push_back(Token(lineno, TokenType::TT_ASSIGN, "=",
+									 buf.pos() - find_nth(source, '\n', lineno - 1),
+									 buf.pos() - find_nth(source, '\n', lineno - 1)));
+		}
 
 		else if (data == '+')
 			toks.push_back(Token(lineno, TokenType::TT_PLUS, std::string(1, data),

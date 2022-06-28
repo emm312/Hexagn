@@ -1,11 +1,7 @@
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <stack>
-#include <queue>
-#include <functional>
+#include <algorithm>
 
 #include <compiler/lexer.h>
 #include <util.h>
@@ -115,17 +111,15 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 	else if (std::find(std::begin(FloatTypes), std::end(FloatTypes), word) != std::end(FloatTypes))
 		return { TokenType::TT_FLOAT, word, start, end };
 
-	else if (word == "string") return { TokenType::TT_STRING,    word, start, end };
-	else if (word == "char")   return { TokenType::TT_CHARACTER, word, start, end };
+	else if (word == "string") return { TokenType::TT_STRING,     word, start, end };
+	else if (word == "char")   return { TokenType::TT_CHARACTER,  word, start, end };
 
-	// Invalid character
-	else
-	{
-		std::cerr << "Invalid character at line " << lineno << '\n';
-		std::cerr << lineno << ": " << getSourceLine(source, lineno);
-		drawArrows(start, end, lineno);
-		exit(-1);
-	}
+	else if (word == "if")     return { TokenType::TT_IF,         word, start, end };
+	else if (word == "else")   return { TokenType::TT_ELSE,       word, start, end };
+
+	else if (word == "import") return { TokenType::TT_IMPORT,     word, start, end };
+
+	else                       return { TokenType::TT_IDENTIFIER, word, start, end };
 }
 
 std::vector<Token> tokenize(std::string source)
@@ -155,16 +149,20 @@ std::vector<Token> tokenize(std::string source)
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
 
-		else if (data == '=') {
-			// check if it's a = or ==
-			if (buf.hasNext() && buf.next() == '=')
-				toks.push_back(Token(lineno, TokenType::TT_COMPARISON, "==",
-									 buf.pos() - find_nth(source, '\n', lineno - 1),
-									 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			else
-				toks.push_back(Token(lineno, TokenType::TT_ASSIGN, "=",
-									 buf.pos() - find_nth(source, '\n', lineno - 1),
-									 buf.pos() - find_nth(source, '\n', lineno - 1)));
+		else if (data == '=')
+		{
+			if (buf.hasNext())
+			{
+				buf.advance();
+				if (buf.current() == '=')
+					toks.push_back(Token(lineno, TokenType::TT_EQ, ";",
+								 buf.pos() - find_nth(source, '\n', lineno - 1) - 1,
+								 buf.pos() - find_nth(source, '\n', lineno - 1)));
+				else
+					toks.push_back(Token(lineno, TokenType::TT_ASSIGN, ";",
+								 buf.pos() - find_nth(source, '\n', lineno - 1),
+								 buf.pos() - find_nth(source, '\n', lineno - 1)));
+			}
 		}
 
 		else if (data == '+')
@@ -189,17 +187,13 @@ std::vector<Token> tokenize(std::string source)
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
 
 		else if (data == '(')
-		{
 			toks.push_back(Token(lineno, TokenType::TT_OPEN_PAREN, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-		}
 		else if (data == ')')
-		{
 			toks.push_back(Token(lineno, TokenType::TT_CLOSE_PAREN, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-		}
 
 		else if (data == ',')
 		{
@@ -219,32 +213,51 @@ std::vector<Token> tokenize(std::string source)
 			toks.push_back(Token(lineno, TokenType::TT_CLOSE_BRACE, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-		} 
-		else if (data == '>') {
-			if (buf.hasNext() && buf.next() == '=')
-				toks.push_back(Token(lineno, TokenType::TT_COMPARISON, ">=",
-									 buf.pos() - find_nth(source, '\n', lineno - 1),
-									 buf.pos() - find_nth(source, '\n', lineno - 1)));
+		}
+
+		else if (data == '>')
+		{
+			if (buf.hasNext())
+			{
+				buf.advance();
+				if (buf.current() == '=')
+					toks.push_back(Token(lineno, TokenType::TT_GTE, ">=",
+										buf.pos() - find_nth(source, '\n', lineno - 1) - 1,
+										buf.pos() - find_nth(source, '\n', lineno - 1)));
+				else
+					toks.push_back(Token(lineno, TokenType::TT_GT, ">",
+										buf.pos() - find_nth(source, '\n', lineno - 1),
+										buf.pos() - find_nth(source, '\n', lineno - 1)));
+			}
+		}
+
+		else if (data == '<')
+		{
+			if (buf.hasNext())
+			{
+				buf.advance();
+				if (buf.current() == '=')
+					toks.push_back(Token(lineno, TokenType::TT_LTE, "<=",
+										buf.pos() - find_nth(source, '\n', lineno - 1) - 1,
+										buf.pos() - find_nth(source, '\n', lineno - 1)));
+			}
 			else
-				toks.push_back(Token(lineno, TokenType::TT_COMPARISON, ">",
+				toks.push_back(Token(lineno, TokenType::TT_LT, "<",
 									 buf.pos() - find_nth(source, '\n', lineno - 1),
 									 buf.pos() - find_nth(source, '\n', lineno - 1)));
 		}
-		else if (data == '<') {
-			if (buf.hasNext() && buf.next() == '=')
-				toks.push_back(Token(lineno, TokenType::TT_COMPARISON, "<=",
-									 buf.pos() - find_nth(source, '\n', lineno - 1),
-									 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			else
-				toks.push_back(Token(lineno, TokenType::TT_COMPARISON, "<",
-									 buf.pos() - find_nth(source, '\n', lineno - 1),
-									 buf.pos() - find_nth(source, '\n', lineno - 1)));
-		}
-		else if (data == '!') {
-			if (buf.hasNext() && buf.next() == '=')
-				toks.push_back(Token(lineno, TokenType::TT_COMPARISON, "!=",
-									 buf.pos() - find_nth(source, '\n', lineno - 1),
-									 buf.pos() - find_nth(source, '\n', lineno - 1)));
+
+		else if (data == '!')
+		{
+			if (buf.hasNext())
+			{
+				buf.advance();
+				if (buf.current() == '=')
+					toks.push_back(Token(lineno, TokenType::TT_NEQ, "!=",
+										buf.pos() - find_nth(source, '\n', lineno - 1),
+										buf.pos() - find_nth(source, '\n', lineno - 1)));
+				else continue;
+			}
 		}
 
 		else if (data == '\'')
@@ -313,21 +326,13 @@ std::vector<Token> tokenize(std::string source)
 				{
 					buf.advance();
 					if (buf.current() == 'n')
-					{
 						str += '\n';
-					}
 					else if (buf.current() == 't')
-					{
 						str += '\t';
-					}
 					else if (buf.current() == '\\')
-					{
 						str += '\\';
-					}
 					else if (buf.current() == '"')
-					{
 						str += '"';
-					}
 					else
 					{
 						std::cerr << "Unknown escape sequence at line " << lineno << '\n';
@@ -362,6 +367,13 @@ std::vector<Token> tokenize(std::string source)
 			const size_t& end = buf.pos() - find_nth(source, '\n', lineno - 1);
 
 			toks.push_back(Token(lineno, TokenType::TT_STR, str, start, end));
+		}
+
+		else if (data == '.')
+		{
+			toks.push_back(Token(lineno, TokenType::TT_DOT, std::string(1, data),
+								 buf.pos() - find_nth(source, '\n', lineno - 1),
+								 buf.pos() - find_nth(source, '\n', lineno - 1)));
 		}
 
 		else if (isalpha(data) || data == '_')

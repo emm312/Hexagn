@@ -39,7 +39,15 @@ enum class TokenType: size_t
 	TT_IF,
 	TT_ELSE,
 
-	TT_COMPARISON,
+	TT_EQ,
+	TT_NEQ,
+	TT_GT,
+	TT_GTE,
+	TT_LT,
+	TT_LTE,
+
+	TT_IMPORT,
+	TT_DOT,
 };
 
 extern const std::string KEYWORDS[];

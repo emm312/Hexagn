@@ -1,0 +1,3 @@
+[submodule "hexagn-stdlib"]
+	path = hexagn-stdlib
+	url = https://github.com/emm312/hexagn-stdlib

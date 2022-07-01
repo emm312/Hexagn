@@ -279,7 +279,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 		std::queue<std::string> varsQueue;
 
 		// I HATE THAT I HAVE TO USE STD::FUNCTION
-		std::function<std::string(TokenBuffer&, size_t&)> parseOp = [&codeStack, &varsQueue, &parseOp, &locals, &funcArgs](TokenBuffer& buf, size_t& regIndex) -> std::string
+		std::function<std::string(TokenBuffer&, size_t)> parseOp = [&codeStack, &varsQueue, &parseOp, &locals, &funcArgs](TokenBuffer& buf, size_t regIndex) -> std::string
 		{
 			std::string _return;
 
@@ -880,15 +880,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				next = buf.current();
 
 				if (next.m_type == TokenType::TT_IDENTIFIER)
-				{
-					code << "LLOD R" << destCounter << " R1 " << "-" << locals.getOffset(buf.current().m_val) << '\n';
-					destCounter++;
-				}
+					code << "LLOD R" << destCounter++ << " R1 " << "-" << locals.getOffset(buf.current().m_val) << '\n';
 				else if (next.m_type == TokenType::TT_NUM)
-				{
-					code << "IMM R" << destCounter << " " << buf.current().m_val << '\n';
-					destCounter++;
-				}
+					code << "IMM R" << destCounter++ << " " << buf.current().m_val << '\n';\
 
 				buf.advance();
 				if (!buf.hasNext() || !isComparison(buf.current()))
@@ -925,9 +919,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				next = buf.current();
 
 				if (next.m_type == TokenType::TT_NUM)
-					code << "IMM R" << destCounter << " " << next.m_val << '\n';
+					code << "IMM R" << destCounter++ << " " << next.m_val << '\n';
 				else if (next.m_type == TokenType::TT_IDENTIFIER)
-					code << "LLOD R" << destCounter << " R1 " << "-" << locals.getOffset(next.m_val) << '\n';
+					code << "LLOD R" << destCounter++ << " R1 " << "-" << locals.getOffset(next.m_val) << '\n';
 
 				code << instruction << " " << ".if" << ifCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
 				code << "JMP .endif"<< ifCount << '\n';

@@ -322,12 +322,12 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 						exit(-1);
 					}
 
-					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 " + std::to_string(offset) + '\n');
+					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 " + std::to_string(offset + 1) + '\n');
 					_return += "R" + std::to_string(regIndex) + ' ';
 				}
 				else
 				{
-					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset) + '\n');
+					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset + 1) + '\n');
 					_return += "R" + std::to_string(regIndex) + ' ';
 				}
 			}
@@ -823,7 +823,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 							if (locals.getOffset(arg.m_val) != size_t(-1))
 								code << "LLOD R2 R1 -" + std::to_string(locals.getOffset(arg.m_val)) << '\n';
 							else if (funcArgs.getOffset(arg.m_val) != size_t(-1))
-								code << "LLOD R2 R1 " + std::to_string(funcArgs.getOffset(arg.m_val)) << '\n';
+								code << "LLOD R2 R1 " + std::to_string(funcArgs.getOffset(arg.m_val) + 1) << '\n';
 							else
 							{
 								std::cerr << "Error: No such variable '" << arg.m_val << "' in current context at line " << arg.m_lineno << '\n';

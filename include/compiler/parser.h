@@ -25,7 +25,7 @@ private:
 	std::vector<Variable> m_vars;
 
 public:
-	void push(const std::string& name, const Token& type);
+	void push(const std::string name, const Token type);
 	void pop();
 	const size_t getOffset(const std::string& name) const;
 	const Token  getType  (const std::string& name) const;

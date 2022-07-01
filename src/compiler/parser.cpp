@@ -1,3 +1,5 @@
+#include <compiler/parser.h>
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -8,7 +10,6 @@
 #include <math.h>
 
 #include <util.h>
-#include <compiler/parser.h>
 #include <compiler/linker.h>
 #include <compiler/string.h>
 #include <importer/importHelper.h>
@@ -50,7 +51,7 @@ public:
 	}
 };
 
-void VarStack::push(const std::string& name, const Token& type)
+void VarStack::push(const std::string name, const Token type)
 {
 	if (!m_vars.empty())
 		m_vars.push_back( { name, m_vars[m_vars.size() - 1].stackOffset + 1, type } );
@@ -450,7 +451,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 		code << "BITS == 32\n";
 		code << "MINHEAP 4096\n";
 		code << "MINSTACK 1024\n";
-		code << "MOV R1 SP\n\n\n";
+		code << "MOV R1 SP\n\n";
 	}
 
 	while (buf.hasNext())
@@ -577,6 +578,14 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				// Function definition
 				else if (next.m_type == TokenType::TT_OPEN_PAREN)
 				{
+					if (isFunc)
+					{
+						std::cerr << "Error: Nested functions are not supported at line " << current.m_lineno << '\n';
+						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+						drawArrows(current.m_start, current.m_end, current.m_lineno);
+						exit(-1);
+					}
+
 					Function func { identifier, current };
 
 					buf.advance();
@@ -762,7 +771,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 					{
 						const Token& current = buf.current();
-						if (!buf.hasNext() || (current.m_type != TokenType::TT_IDENTIFIER && !isDataType(current)))
+						if (!buf.hasNext() || (current.m_type != TokenType::TT_IDENTIFIER && current.m_type != TokenType::TT_NUM && current.m_type != TokenType::TT_FLT))
 						{
 							std::cerr << "Error: Expected identifier or value at line " << buf.current().m_lineno << '\n';
 							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
@@ -1012,7 +1021,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 			code << "." << func.getSignature() << '\n';
 
 			// cdecl calling convention entry
-			code << "PSH R1\nMOV R1 SP\n\n\n";
+			code << "PSH R1\nMOV R1 SP\n\n";
 
 			code << func.code;
 

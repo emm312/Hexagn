@@ -1,6 +1,15 @@
-int8 main() {
-	int8 x = 1;
-	if (x == 1) {
-		int8 e = 1;
-	}
+// Importing libraries
+import io;
+
+// Every hexagn program needs a main function that returns an int8 and has no arguments
+// There wont be any errors if you dont have one, but the output code wont run
+int8 main()
+{
+	// Variable definition syntax
+	int8 a = 5;
+	a = a + 10 * 5;
+
+	// Function calls
+	string str = "Hello, World";
+	println(str);
 }

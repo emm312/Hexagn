@@ -19,7 +19,31 @@ std::string registerString(const std::string& str)
 			return s.signature;
 	
 	const std::string signature = ".str" + std::to_string(strCount);
-	strings.push_back( { signature, str } );
+
+	std::string newStr;
+	for (const char& c: str)
+		switch (c)
+		{
+			case '\n':
+			{
+				newStr += "\\n";
+				break;
+			}
+			
+			case '\t':
+			{
+				newStr += "\\t";
+				break;
+			}
+			
+			default:
+			{
+				newStr += c;
+				break;
+			}
+		}
+
+	strings.push_back( { signature, newStr } );
 	strCount++;
 	return signature;
 }

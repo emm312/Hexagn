@@ -19,7 +19,7 @@ const LenghtEncodedType encodeType(const Token& typeName)
 
 	switch (typeName.m_type)
 	{
-		case TokenType::TT_VOID: return { len, "v" };
+		case TokenType::TT_VOID:           return { size_t(-1), "v" };
 		case TokenType::TT_INT:
 		{
 			if (typeName.m_val == "int8")  return { size_t(-1), "i8"  };
@@ -50,6 +50,12 @@ const std::string Function::getSignature() const
 	std::stringstream ss;
 
 	ss << "_Hx" /* Hexagn mangled name signature */ << name.m_val.length() << name.m_val;
+
+	const LenghtEncodedType& _return = encodeType(returnType);
+	if (_return.len == size_t(-1))
+		ss << _return.val;
+	else
+		ss << '_' << _return.len << _return.val;
 
 	for (const auto& arg: argTypes)
 	{
@@ -102,13 +108,37 @@ void Linker::addFunction(const Function& function)
 	linkerFunctions.push_back(function);
 }
 
+const std::string getTypeName(const Token& type)
+{
+	switch (type.m_type)
+	{
+		case TokenType::TT_VOID     : return "void";
+		case TokenType::TT_INT      : return type.m_val;
+		case TokenType::TT_UINT     : return type.m_val;
+		case TokenType::TT_FLOAT    : return type.m_val;
+		case TokenType::TT_STRING   : return "string";
+		case TokenType::TT_CHARACTER: return "char";
+
+		default: return "";
+	}
+}
+
 const Function Linker::getFunction(const Token& name, const std::vector<Token>& argTypes) const
 {
 	for (const auto& func: linkerFunctions)
-		if (func.name.m_val == name.m_val && func.argTypes == argTypes)
-			return func;
+		if (func.name.m_val == name.m_val)
+		{
+			if (func.argTypes.size() != argTypes.size()) break;
+			for (size_t i = 0; i < func.argTypes.size(); ++i)
+				if (func.argTypes[i].m_type != argTypes[i].m_type) break;
 
-	std::cerr << "Error: Function '" << name.m_val << "' does not exist\n";
+			return func;
+		}
+
+	std::cerr << "Error: Function '" << name.m_val << "' with arguments ";
+	for (const Token& arg: argTypes)
+		std::cerr << getTypeName(arg) << ' ';
+	std::cerr << "does not exist at line " << name.m_lineno << '\n';
 	std::cerr << name.m_lineno << ": " << getSourceLine(glob_src, name.m_lineno);
 	drawArrows(name.m_start, name.m_end, name.m_lineno);
 	exit(-1);

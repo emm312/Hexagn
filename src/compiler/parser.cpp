@@ -623,7 +623,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						const Token& identifier = buf.current();
 
 						func.argTypes.push_back(type);
-						funcArgsStack.push(identifier.m_val, current);
+						funcArgsStack.push(identifier.m_val, type);
 
 						buf.advance();
 						if (!buf.hasNext())
@@ -677,9 +677,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 							++scope;
 						else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE)
 						{
-							--scope;
 							if (scope == 0)
 								break;
+							--scope;
 						}
 
 						body.push_back(buf.current());
@@ -770,8 +770,8 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					std::vector<Token> argTypes;
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 					{
-						const Token& current = buf.current();
-						if (!buf.hasNext() || (current.m_type != TokenType::TT_IDENTIFIER && current.m_type != TokenType::TT_NUM && current.m_type != TokenType::TT_FLT))
+						const Token& val = buf.current();
+						if (!buf.hasNext() || (val.m_type != TokenType::TT_IDENTIFIER && val.m_type != TokenType::TT_STR))
 						{
 							std::cerr << "Error: Expected identifier or value at line " << buf.current().m_lineno << '\n';
 							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
@@ -779,20 +779,24 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 							exit(-1);
 						}
 
-						if (current.m_type == TokenType::TT_IDENTIFIER && locals.getOffset(current.m_val) == size_t(-1) && funcArgs.getOffset(current.m_val) == size_t(-1))
+						if (val.m_type == TokenType::TT_IDENTIFIER && locals.getOffset(val.m_val) == size_t(-1) && funcArgs.getOffset(val.m_val) == size_t(-1))
 						{
-							std::cerr << "Error: No such variable '" << current.m_val << "' in current context at line " << current.m_lineno << '\n';
-							std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
-							drawArrows(current.m_start, current.m_end, current.m_lineno);
+							std::cerr << "Error: No such variable '" << val.m_val << "' in current context at line " << val.m_lineno << '\n';
+							std::cerr << val.m_lineno << ": " << getSourceLine(glob_src, val.m_lineno);
+							drawArrows(val.m_start, val.m_end, val.m_lineno);
 							exit(-1);
 						}
 
-						args.push_back(current);
-
-						Token type = locals.getType(current.m_val);
-						if (type.m_type == (TokenType) -1)
-							type = funcArgs.getType(current.m_val);
-						argTypes.push_back(type);
+						args.push_back(val);
+						if (val.m_type == TokenType::TT_STR)
+							argTypes.push_back(Token(val.m_lineno, TokenType::TT_STRING, val.m_val, val.m_start, val.m_end));
+						else
+						{
+							Token type = locals.getType(val.m_val);
+							if (type.m_type == (TokenType) -1)
+								type = funcArgs.getType(val.m_val);
+							argTypes.push_back(type);
+						}
 
 						buf.advance();
 
@@ -830,8 +834,8 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 
 							val = "R2";
 						}
-						else
-							val = arg.m_val;
+						else if (arg.m_type == TokenType::TT_STR)
+							val = registerString(arg.m_val);
 						
 						code << "PSH " << val << '\n';
 					}
@@ -850,7 +854,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 			case TokenType::TT_IF:
 			{
 				if (debugSymbols)
-					code << "// " << getSourceLine(glob_src, current.m_lineno) << '\n';
+					code << "// " << getSourceLine(glob_src, current.m_lineno);
 
 				ifCount++;
 				int destCounter = 2;
@@ -1015,7 +1019,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 
 	if (!isFunc)
 	{
-		code << "\nCAL ._Hx4main\nMOV SP R1\nHLT\n\n";
+		code << "\nCAL ._Hx4maini8\nMOV SP R1\nHLT\n\n";
 		for (const auto& func: hexagnMainLinker.getFunctions())
 		{
 			code << "." << func.getSignature() << '\n';

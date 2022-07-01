@@ -327,7 +327,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 				}
 				else
 				{
-					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset + 1) + '\n');
+					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 -" + std::to_string(offset) + '\n');
 					_return += "R" + std::to_string(regIndex) + ' ';
 				}
 			}
@@ -368,7 +368,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 						exit(-1);
 					}
 
-					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 " + std::to_string(offset) + '\n');
+					varsQueue.push("LLOD R" + std::to_string(regIndex) + " R1 " + std::to_string(offset + 1) + '\n');
 					_return += "R" + std::to_string(regIndex) + '\n';
 				}
 				else

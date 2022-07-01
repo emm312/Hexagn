@@ -4,11 +4,11 @@ MINSTACK 1024
 MOV R1 SP
 
 
-CAL ._Hx4main
+CAL ._Hx4maini8
 MOV SP R1
 HLT
 
-._Hx7printlns
+._Hx7printlnvs
 PSH R1
 MOV R1 SP
 
@@ -25,7 +25,7 @@ MOV SP R1
 POP R1
 RET
 
-._Hx5inputs
+._Hx5inputvs
 PSH R1
 MOV R1 SP
 
@@ -41,7 +41,7 @@ MOV SP R1
 POP R1
 RET
 
-._Hx4main
+._Hx4maini8
 PSH R1
 MOV R1 SP
 
@@ -53,12 +53,8 @@ MLT R4 10 5
 ADD R2 R3 R4
 LSTR R1 -1 R2
 
-MOV R2 .str0
-PSH R2
-
-LLOD R2 R1 -2
-PSH R2
-CAL ._Hx7printlns
+PSH .str0
+CAL ._Hx7printlnvs
 ADD SP SP 1
 
 MOV SP R1
@@ -66,5 +62,5 @@ POP R1
 RET
 
 .str0
-DW [ "Hello, World" 0 ]
+DW [ "Hello, World\nHow are you?" 0 ]
 

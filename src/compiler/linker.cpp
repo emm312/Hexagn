@@ -137,7 +137,7 @@ const Function Linker::getFunction(const Token& name, const std::vector<Token>& 
 					if (!isIntegerDataType(argTypes[i]) && !isNumber(argTypes[i]))
 						goto loopEnd;
 				}
-				else if (!(isFloatDataType(func.argTypes[i]) && isFloatDataType(argTypes[i])))
+				else if (isFloatDataType(func.argTypes[i]) && !isFloatDataType(argTypes[i]))
 					goto loopEnd;
 				else if (func.argTypes[i].m_type == TokenType::TT_STRING && argTypes[i].m_type != TokenType::TT_STRING)
 					goto loopEnd;

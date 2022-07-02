@@ -1,6 +1,19 @@
 // Importing libraries
 import io;
 
+// Declaring new functions
+// ReturnType name(Args...)
+void test(int8 arg)
+{
+	string test = " ";
+	// Copy arg into test because casting does not exist
+	__urcl__ "LLOD R2 R1 2";
+	__urcl__ "LLOD R3 R1 -1";
+	__urcl__ "ADD R2 R2 0x30";
+	__urcl__ "STR R3 R2";
+	println(test);
+}
+
 // Every hexagn program needs a main function that returns an int8 and has no arguments
 // There wont be any errors if you dont have one, but the output code wont run
 int8 main()
@@ -11,4 +24,5 @@ int8 main()
 
 	// Function calls
 	println("Hello, World\nHow are you?");
+	test(5);
 }

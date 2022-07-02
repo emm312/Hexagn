@@ -906,7 +906,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				{
 					case TokenType::TT_EQ:  instruction = "BRE"; break;
 					case TokenType::TT_NEQ: instruction = "BNE"; break;
-					case TokenType::TT_GT:  instruction = "BRG"; break;
+					case TokenType::TT_GT:  instruction = "BRGdd"; break;
 					case TokenType::TT_GTE: instruction = "BGE"; break;
 					case TokenType::TT_LT:  instruction = "BRL"; break;
 					case TokenType::TT_LTE: instruction = "BLE"; break;

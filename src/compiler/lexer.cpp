@@ -111,15 +111,17 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 	else if (std::find(std::begin(FloatTypes), std::end(FloatTypes), word) != std::end(FloatTypes))
 		return { TokenType::TT_FLOAT, word, start, end };
 
-	else if (word == "string") return { TokenType::TT_STRING,     word, start, end };
-	else if (word == "char")   return { TokenType::TT_CHARACTER,  word, start, end };
+	else if (word == "string")   return { TokenType::TT_STRING,     word, start, end };
+	else if (word == "char")     return { TokenType::TT_CHARACTER,  word, start, end };
 
-	else if (word == "if")     return { TokenType::TT_IF,         word, start, end };
-	else if (word == "else")   return { TokenType::TT_ELSE,       word, start, end };
+	else if (word == "if")       return { TokenType::TT_IF,         word, start, end };
+	else if (word == "else")     return { TokenType::TT_ELSE,       word, start, end };
 
-	else if (word == "import") return { TokenType::TT_IMPORT,     word, start, end };
+	else if (word == "import")   return { TokenType::TT_IMPORT,     word, start, end };
 
-	else                       return { TokenType::TT_IDENTIFIER, word, start, end };
+	else if (word == "__urcl__") return { TokenType::TT_URCL_BLOCK, word, start, end};
+
+	else                         return { TokenType::TT_IDENTIFIER, word, start, end };
 }
 
 std::vector<Token> tokenize(std::string source)

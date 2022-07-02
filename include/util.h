@@ -13,6 +13,10 @@ void drawArrows(size_t start, size_t end, const size_t& lineno);
 size_t find_nth(std::string haystack, const char& needle, const size_t& nth);
 const std::string getSourceLine(const std::string& src, const size_t& line);
 
+const bool isIntegerDataType(const Token& tok);
+const bool isFloatDataType(const Token& tok);
+const bool isNumber(const Token& tok);
+
 namespace std
 {
 	string to_string(TokenType tokenType);

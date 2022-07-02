@@ -115,6 +115,7 @@ const std::string getTypeName(const Token& type)
 		case TokenType::TT_VOID     : return "void";
 		case TokenType::TT_INT      : return type.m_val;
 		case TokenType::TT_UINT     : return type.m_val;
+		case TokenType::TT_NUM      : return "int";
 		case TokenType::TT_FLOAT    : return type.m_val;
 		case TokenType::TT_STRING   : return "string";
 		case TokenType::TT_CHARACTER: return "char";
@@ -130,11 +131,22 @@ const Function Linker::getFunction(const Token& name, const std::vector<Token>& 
 		{
 			if (func.argTypes.size() != argTypes.size()) break;
 			for (size_t i = 0; i < func.argTypes.size(); ++i)
-				if (func.argTypes[i].m_type != argTypes[i].m_type) break;
+			{
+				if (isIntegerDataType(func.argTypes[i]))
+				{
+					if (!isIntegerDataType(argTypes[i]) && !isNumber(argTypes[i]))
+						goto loopEnd;
+				}
+				else if (!(isFloatDataType(func.argTypes[i]) && isFloatDataType(argTypes[i])))
+					goto loopEnd;
+				else if (func.argTypes[i].m_type == TokenType::TT_STRING && argTypes[i].m_type != TokenType::TT_STRING)
+					goto loopEnd;
+			}
 
 			return func;
 		}
-
+	
+	loopEnd:
 	std::cerr << "Error: Function '" << name.m_val << "' with arguments ";
 	for (const Token& arg: argTypes)
 		std::cerr << getTypeName(arg) << ' ';

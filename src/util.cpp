@@ -74,6 +74,21 @@ size_t find_nth(std::string haystack, const char& needle, const size_t& nth)
 	return -1;
 }
 
+const bool isIntegerDataType(const Token& tok)
+{
+	return tok.m_type == TokenType::TT_INT || tok.m_type == TokenType::TT_UINT;
+}
+
+const bool isFloatDataType(const Token& tok)
+{
+	return tok.m_type == TokenType::TT_FLOAT;
+}
+
+const bool isNumber(const Token& tok)
+{
+	return tok.m_type == TokenType::TT_NUM || tok.m_type == TokenType::TT_FLT;
+}
+
 const std::string getSourceLine(const std::string& src, const size_t& line)
 {
 	std::string ret;
@@ -91,8 +106,23 @@ namespace std
 	{
 		switch (tokenType)
 		{
-			// case TokenType::TT_KEYWORD:
-			// 	return "KEYWORD";
+			case TokenType::TT_VOID:
+				return "VOID";
+			
+			case TokenType::TT_INT:
+				return "INT";
+			
+			case TokenType::TT_UINT:
+				return "UINT";
+			
+			case TokenType::TT_FLOAT:
+				return "FLOAT";
+			
+			case TokenType::TT_STRING:
+				return "STRING";
+			
+			case TokenType::TT_CHARACTER:
+				return "CHARACTER";
 
 			case TokenType::TT_IDENTIFIER:
 				return "IDENTIFIER";
@@ -103,11 +133,11 @@ namespace std
 			case TokenType::TT_NUM:
 				return "NUMBER";
 
-			case TokenType::TT_FLOAT:
-				return "FLOAT";
+			case TokenType::TT_FLT:
+				return "FLT";
 
 			case TokenType::TT_STR:
-				return "STRING";
+				return "STR";
 
 			case TokenType::TT_CHAR:
 				return "CHAR";
@@ -141,6 +171,18 @@ namespace std
 
 			case TokenType::TT_CLOSE_BRACE:
 				return "CLOSE_BRACE";
+			
+			case TokenType::TT_IF:
+				return "IF";
+			
+			case TokenType::TT_ELSE:
+				return "ELSE";
+			
+			case TokenType::TT_EQ:
+				return "EQ";
+			
+			case TokenType::TT_NEQ:
+				return "NEQ";
 
 			default:
 				return "Unknown";

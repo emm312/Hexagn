@@ -402,7 +402,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 	}
 }
 
-const inline bool isDataType(const Token& tok)
+inline const bool isDataType(const Token& tok)
 {
 	return tok.m_type == TokenType::TT_VOID
 			|| tok.m_type == TokenType::TT_INT
@@ -412,22 +412,7 @@ const inline bool isDataType(const Token& tok)
 			|| tok.m_type == TokenType::TT_CHARACTER;
 }
 
-const inline bool isIntegerDataType(const Token& tok)
-{
-	return tok.m_type == TokenType::TT_INT || tok.m_type == TokenType::TT_UINT;
-}
-
-const inline bool isFloatDataType(const Token& tok)
-{
-	return tok.m_type == TokenType::TT_FLOAT;
-}
-
-const inline bool isNumber(const Token& tok)
-{
-	return tok.m_type == TokenType::TT_NUM || tok.m_type == TokenType::TT_FLT;
-}
-
-const inline bool isComparison(const Token& tok)
+inline const bool isComparison(const Token& tok)
 {
 	return tok.m_type == TokenType::TT_EQ
 			|| tok.m_type == TokenType::TT_NEQ
@@ -771,7 +756,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 					{
 						const Token& val = buf.current();
-						if (!buf.hasNext() || (val.m_type != TokenType::TT_IDENTIFIER && val.m_type != TokenType::TT_STR))
+						if (!buf.hasNext() || (val.m_type != TokenType::TT_IDENTIFIER && val.m_type != TokenType::TT_NUM && val.m_type != TokenType::TT_STR))
 						{
 							std::cerr << "Error: Expected identifier or value at line " << buf.current().m_lineno << '\n';
 							std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
@@ -790,6 +775,8 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						args.push_back(val);
 						if (val.m_type == TokenType::TT_STR)
 							argTypes.push_back(Token(val.m_lineno, TokenType::TT_STRING, val.m_val, val.m_start, val.m_end));
+						else if (val.m_type == TokenType::TT_NUM)
+							argTypes.push_back(val);
 						else
 						{
 							Token type = locals.getType(val.m_val);
@@ -836,6 +823,8 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						}
 						else if (arg.m_type == TokenType::TT_STR)
 							val = registerString(arg.m_val);
+						else if (arg.m_type == TokenType::TT_NUM)
+							val = arg.m_val;
 						
 						code << "PSH " << val << '\n';
 					}
@@ -1004,6 +993,22 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 			}
 
 			case TokenType::TT_SEMICOLON: break;
+
+			case TokenType::TT_URCL_BLOCK:
+			{
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_STR)
+				{
+					std::cerr << "Error: Expected URCL Code in string after __urcl__ at line " << current.m_lineno << '\n';
+					std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+					drawArrows(current.m_start, current.m_end, current.m_lineno);
+					exit(-1);
+				}
+
+				if (debugSymbols)
+					code << "// " << getSourceLine(glob_src, buf.current().m_lineno);
+				code << buf.current().m_val << "\n\n";
+			}
 
 			default: break;
 		}

@@ -1,5 +1,0 @@
-int8 test() { return 0; }
-int8 main() {
-    test()
-}
-

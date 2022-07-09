@@ -999,7 +999,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				buf.advance();
 				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_STR)
 				{
-					std::cerr << "Error: Expected URCL Code in string after __urcl__ at line " << current.m_lineno << '\n';
+					std::cerr << "Error: Expected URCL Code in string after urcl at line " << current.m_lineno << '\n';
 					std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
 					drawArrows(current.m_start, current.m_end, current.m_lineno);
 					exit(-1);

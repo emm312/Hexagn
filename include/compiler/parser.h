@@ -44,6 +44,6 @@ struct Function
 
 bool operator ==(const Token& lhs, const Token& rhs);
 
-std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc = false, const VarStack& funcArgs = VarStack());
+std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc = false, const VarStack& _locals = VarStack(), const VarStack& funcArgs = VarStack());
 
 #endif // PARSER_H

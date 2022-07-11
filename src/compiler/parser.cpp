@@ -275,7 +275,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 
 		std::string code;
 		TokenBuffer buf(prefix);
-		std::stack<std::string> codeStack;
+		std::queue<std::string> codeStack;
 		std::queue<std::string> varsQueue;
 
 		// I HATE THAT I HAVE TO USE STD::FUNCTION
@@ -393,7 +393,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 		}
 		while (!codeStack.empty())
 		{
-			code += codeStack.top();
+			code += codeStack.front();
 			codeStack.pop();
 		}
 
@@ -424,11 +424,11 @@ inline const bool isComparison(const Token& tok)
 
 Linker hexagnMainLinker;
 
-std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& funcArgs)
+std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& _locals, const VarStack& funcArgs)
 {
 	TokenBuffer buf(tokens);
 	std::stringstream code;
-	VarStack locals;
+	VarStack locals = _locals;
 
 	// Headers
 	if (!isFunc)
@@ -538,7 +538,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						const std::string& string = expr[0].m_val;
 
 						// Register the string into the string table and get the signature
-						const std::string signature = registerString(string);
+						const std::string& signature = registerString(string);
 
 						// Put definition to stacc
 						code << "MOV R2 " << signature << "\nPSH R2\n\n";
@@ -546,15 +546,21 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 
 					else if (current.m_type == TokenType::TT_CHARACTER)
 					{
-						if (expr[0].m_type != TokenType::TT_CHAR)
+						const Token& tok = expr[0];
+
+						if (tok.m_type == TokenType::TT_CHAR)
+							code << "IMM R2 " << (int) expr[0].m_val[0] << '\n';
+						else if (tok.m_type == TokenType::TT_NUM)
+							code << "MOD R2 " << tok.m_val << " 0xff\n";
+						else
 						{
-							std::cerr << "Error: Expected character literal at line " << expr[0].m_lineno << '\n';
+							std::cerr << "Error: Expected character literal or number at line " << expr[0].m_lineno << '\n';
 							std::cerr << expr[0].m_lineno << ": " << getSourceLine(glob_src, expr[0].m_lineno);
 							drawArrows(expr[0].m_start, expr[0].m_end, expr[0].m_lineno);
 							exit(-1);
 						}
 
-						code << "IMM R2 " << (int) expr[0].m_val[0] << "\nPSH R2\n\n";
+						code << "PSH R2\n\n";
 					}
 
 					locals.push(identifier.m_val, current);
@@ -670,7 +676,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						body.push_back(buf.current());
 						buf.advance();
 					}
-					func.code = compile(body, debugSymbols, true, funcArgsStack);
+					func.code = compile(body, debugSymbols, true, VarStack(), funcArgsStack);
 					hexagnMainLinker.addFunction(func);
 				}
 
@@ -992,8 +998,6 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				break;
 			}
 
-			case TokenType::TT_SEMICOLON: break;
-
 			case TokenType::TT_URCL_BLOCK:
 			{
 				buf.advance();
@@ -1010,7 +1014,15 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				code << buf.current().m_val << "\n\n";
 			}
 
-			default: break;
+			case TokenType::TT_SEMICOLON: break;
+
+			default:
+			{
+				std::cerr << "Unexpected token at line " << current.m_lineno << '\n';
+				std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+				drawArrows(current.m_start, current.m_end, current.m_lineno);
+				exit(-1);
+			}
 		}
 
 		buf.advance();

@@ -243,11 +243,11 @@ std::vector<Token> tokenize(std::string source)
 					toks.push_back(Token(lineno, TokenType::TT_LTE, "<=",
 										buf.pos() - find_nth(source, '\n', lineno - 1) - 1,
 										buf.pos() - find_nth(source, '\n', lineno - 1)));
+				else
+					toks.push_back(Token(lineno, TokenType::TT_LT, "<",
+											buf.pos() - find_nth(source, '\n', lineno - 1),
+											buf.pos() - find_nth(source, '\n', lineno - 1)));
 			}
-			else
-				toks.push_back(Token(lineno, TokenType::TT_LT, "<",
-									 buf.pos() - find_nth(source, '\n', lineno - 1),
-									 buf.pos() - find_nth(source, '\n', lineno - 1)));
 		}
 
 		else if (data == '!')

@@ -45,23 +45,17 @@ RET
 PSH R1
 MOV R1 SP
 
-// string test = " "; 
 MOV R2 .str0
 PSH R2
 
-// __urcl__ "LLOD R2 R1 2"; 
 LLOD R2 R1 2
 
-// __urcl__ "LLOD R3 R1 -1"; 
 LLOD R3 R1 -1
 
-// __urcl__ "ADD R2 R2 0x30"; 
 ADD R2 R2 0x30
 
-// __urcl__ "STR R3 R2"; 
 STR R3 R2
 
-// println(test); 
 LLOD R2 R1 -1
 PSH R2
 CAL ._Hx7printlnvs
@@ -75,26 +69,37 @@ RET
 PSH R1
 MOV R1 SP
 
-// int8 a = 5; 
 AND R2 5 0xff
 PSH R2
 
-// a = a + 10 * 5; 
 LLOD R3 R1 -1
-MLT R4 10 5
-ADD R2 R3 R4
+MLT R2 R3 2
 LSTR R1 -1 R2
 
-// println("Hello, World\nHow are you?"); 
-PSH .str1
-CAL ._Hx7printlnvs
-ADD SP SP 1
-
-// test(5); 
 PSH 5
 CAL ._Hx4testvi8
 ADD SP SP 1
 
+LLOD R2 R1 -1
+IMM R3 1
+BNE .if1 R2 R3
+JMP .endif1
+.if1
+.while1
+LLOD R2 R1 -1
+IMM R3 0
+BRE .endwhile1 R2 R3
+PSH .str1
+CAL ._Hx7printlnvs
+ADD SP SP 1
+
+LLOD R3 R1 -1
+SUB R2 R3 1
+LSTR R1 -1 R2
+
+JMP .while1
+.endwhile1
+.endif1
 MOV SP R1
 POP R1
 RET
@@ -103,5 +108,5 @@ RET
 DW [ " " 0 ]
 
 .str1
-DW [ "Hello, World\nHow are you?" 0 ]
+DW [ "a is not 0" 0 ]
 

@@ -976,6 +976,8 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				whileCount++;
 				int destCounter = 2;
 
+				code << ".while"<< whileCount << '\n';
+
 				buf.advance();
 				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_OPEN_PAREN)
 				{
@@ -1015,12 +1017,12 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 
 				switch (next.m_type)
 				{
-					case TokenType::TT_EQ:  instruction = "BRE"; break;
-					case TokenType::TT_NEQ: instruction = "BNE"; break;
-					case TokenType::TT_GT:  instruction = "BRG"; break;
-					case TokenType::TT_GTE: instruction = "BGE"; break;
-					case TokenType::TT_LT:  instruction = "BRL"; break;
-					case TokenType::TT_LTE: instruction = "BLE"; break;
+					case TokenType::TT_EQ:  instruction = "BNE"; break;
+					case TokenType::TT_NEQ: instruction = "BRE"; break;
+					case TokenType::TT_GT:  instruction = "BLE"; break;
+					case TokenType::TT_GTE: instruction = "BRL"; break;
+					case TokenType::TT_LT:  instruction = "BGE"; break;
+					case TokenType::TT_LTE: instruction = "BRG"; break;
 
 					default: break;
 				}
@@ -1040,8 +1042,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				else if (next.m_type == TokenType::TT_IDENTIFIER)
 					code << "LLOD R" << destCounter++ << " R1 " << "-" << locals.getOffset(next.m_val) << '\n';
 
-				code << instruction << " " << ".while" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
-				code << ".while"<< whileCount << '\n';
+				code << instruction << " " << ".endwhile" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
 
 				buf.advance();
 				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_CLOSE_PAREN)
@@ -1072,9 +1073,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						++scope;
 					else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE)
 					{
-						--scope;
 						if (scope == 0)
 							break;
+						--scope;
 					}
 
 					body.push_back(buf.current());
@@ -1083,7 +1084,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 
 				const std::string& outcode = compile(body, debugSymbols, true, locals);
 				code << outcode;
-				code << instruction << " " << ".while" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+				code << "JMP .while" << whileCount << '\n';
 				code << ".endwhile" << whileCount << '\n';
 
 				break;

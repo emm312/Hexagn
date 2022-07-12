@@ -13,7 +13,7 @@ private:
 
 public:
 	void addFunction(const Function& function);
-	const Function getFunction(const Token& name, const std::vector<Token>& argTypes) const;
+	const Function getFunction(const std::string& src, const Token& name, const std::vector<Token>& argTypes) const;
 	const std::vector<Function>& getFunctions() const;
 
 };

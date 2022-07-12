@@ -836,7 +836,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						code << "PSH " << val << '\n';
 					}
 
-					const Function& func = hexagnMainLinker.getFunction(current, argTypes);
+					const Function& func = hexagnMainLinker.getFunction(glob_src, current, argTypes);
 
 					code << "CAL ." << func.getSignature() << '\n';
 
@@ -922,36 +922,54 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				code << instruction << " " << ".if" << ifCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
 				code << "JMP .endif"<< ifCount << '\n';
 				code << ".if"<< ifCount << '\n';
-				
-				buf.next();
-				if (buf.current().m_type == TokenType::TT_CLOSE_PAREN)
+
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 				{
-					std::vector<Token> body;
-					size_t scope = 0;
-					while (buf.hasNext()) {
-						if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
-							++scope;
-						else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE) {
-							--scope;
-							if (scope == 0)
-								break;
-						}
-						body.push_back(buf.current());
-						buf.advance();
-					}
-					std::string outcode = compile(body, debugSymbols, true, locals);
-					code << outcode;
-					code << ".endif" << ifCount << '\n';
-				}
-				else
-				{
-					std::cerr << "Error: Expected ')' at line " << buf.current().m_lineno << '\n';
-					std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
-					drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+					std::cerr << "Error: Expected ')' after condition at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
 					exit(-1);
 				}
+				next = buf.current();
+				
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_OPEN_BRACE)
+				{
+					std::cerr << "Error: Expecter '{' after closing ')' at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
+					exit(-1);
+				}
+				next = buf.current();
+				buf.advance();
+
+				std::vector<Token> body;
+				size_t scope = 0;
+				while (buf.hasNext())
+				{
+					if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
+						++scope;
+					else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE)
+					{
+						if (scope == 0)
+							break;
+						--scope;
+					}
+
+					body.push_back(buf.current());
+					buf.advance();
+				}
+
+				const std::string& outcode = compile(body, debugSymbols, true, locals);
+				code << outcode;
+				code << ".endif" << ifCount << '\n';
+
+				break;
 			}
-			case TokenType::TT_WHILE: { //----------------------------------------------------------------------------------
+
+			case TokenType::TT_WHILE:
+			{
 				if (debugSymbols)
 					code << "// " << getSourceLine(glob_src, current.m_lineno);
 
@@ -1024,35 +1042,51 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 
 				code << instruction << " " << ".while" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
 				code << ".while"<< whileCount << '\n';
-				
-				buf.next();
-				if (buf.current().m_type == TokenType::TT_CLOSE_PAREN)
+
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 				{
-					std::vector<Token> body;
-					size_t scope = 0;
-					while (buf.hasNext()) {
-						if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
-							++scope;
-						else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE) {
-							--scope;
-							if (scope == 0)
-								break;
-						}
-						body.push_back(buf.current());
-						buf.advance();
-					}
-					std::string outcode = compile(body, debugSymbols, true, locals);
-					code << outcode;
-					code << instruction << " " << ".while" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
-					code << ".endwhile" << whileCount << '\n';
-				}
-				else
-				{
-					std::cerr << "Error: Expected ')' at line " << buf.current().m_lineno << '\n';
-					std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
-					drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+					std::cerr << "Error: Expected ')' after condition at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
 					exit(-1);
 				}
+				next = buf.current();
+				
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_OPEN_BRACE)
+				{
+					std::cerr << "Error: Expecter '{' after closing ')' at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
+					exit(-1);
+				}
+				next = buf.current();
+				buf.advance();
+
+				std::vector<Token> body;
+				size_t scope = 0;
+				while (buf.hasNext())
+				{
+					if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
+						++scope;
+					else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE)
+					{
+						--scope;
+						if (scope == 0)
+							break;
+					}
+
+					body.push_back(buf.current());
+					buf.advance();
+				}
+
+				const std::string& outcode = compile(body, debugSymbols, true, locals);
+				code << outcode;
+				code << instruction << " " << ".while" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+				code << ".endwhile" << whileCount << '\n';
+
+				break;
 			}
 
 			case TokenType::TT_IMPORT:

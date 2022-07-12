@@ -52,6 +52,7 @@ void parseSource(Linker& targetLinker, const std::filesystem::path& file)
 		std::vector<std::string> toks = split(lines[i], ' ');
 		if (toks.size() == 0)
 			continue;
+		
 
 		if (toks[0] == "@FUNC")
 		{
@@ -98,8 +99,34 @@ void parseSource(Linker& targetLinker, const std::filesystem::path& file)
 
 				if (toks[0] == "@RETURN")
 					funcCode << "MOV SP R1\nPOP R1\nRET\n\n";
+
 				else if (toks[0] == "@END")
 					break;
+
+				else if (toks[0] == "@CALL")
+				{
+					if (toks.size() < 2)
+					{
+						std::cerr << "Error: @CALL needs atleast a function name after it at library file " << file.string() << " at line " << i << '\n';
+						exit(-1);
+					}
+
+					const Token& name = Token(i, TokenType::TT_IDENTIFIER, toks[1], 6, 6 + toks[1].size());
+					std::vector<Token> args;
+					size_t start = name.m_end + 1;
+					for (size_t j = 2; j < toks.size(); ++j)
+					{
+						const std::string& argStr = toks[j];
+						args.push_back(Token(i, strToType(argStr), argStr, start, start + argStr.size()));
+						start += argStr.size() + 1;
+					}
+
+					const Function& func2 = targetLinker.getFunction(src, name, args);
+
+					funcCode << "CAL ." << func2.getSignature() << '\n';
+					funcCode << "ADD SP SP " << args.size() << '\n';
+				}
+
 				else
 					funcCode << lines[i] << '\n';
 			}

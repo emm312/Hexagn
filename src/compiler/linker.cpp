@@ -124,7 +124,7 @@ const std::string getTypeName(const Token& type)
 	}
 }
 
-const Function Linker::getFunction(const Token& name, const std::vector<Token>& argTypes) const
+const Function Linker::getFunction(const std::string& src, const Token& name, const std::vector<Token>& argTypes) const
 {
 	for (const auto& func: linkerFunctions)
 		if (func.name.m_val == name.m_val)
@@ -151,7 +151,7 @@ const Function Linker::getFunction(const Token& name, const std::vector<Token>& 
 	for (const Token& arg: argTypes)
 		std::cerr << getTypeName(arg) << ' ';
 	std::cerr << "does not exist at line " << name.m_lineno << '\n';
-	std::cerr << name.m_lineno << ": " << getSourceLine(glob_src, name.m_lineno);
+	std::cerr << name.m_lineno << ": " << getSourceLine(src, name.m_lineno);
 	drawArrows(name.m_start, name.m_end, name.m_lineno);
 	exit(-1);
 }

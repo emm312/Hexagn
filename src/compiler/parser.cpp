@@ -443,6 +443,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 	{
 		const Token& current = buf.current();
 		int ifCount = 0;
+		int whileCount = 0;
 		switch (current.m_type)
 		{
 			// Variable or function definition
@@ -895,7 +896,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				{
 					case TokenType::TT_EQ:  instruction = "BRE"; break;
 					case TokenType::TT_NEQ: instruction = "BNE"; break;
-					case TokenType::TT_GT:  instruction = "BRGdd"; break;
+					case TokenType::TT_GT:  instruction = "BRG"; break;
 					case TokenType::TT_GTE: instruction = "BGE"; break;
 					case TokenType::TT_LT:  instruction = "BRL"; break;
 					case TokenType::TT_LTE: instruction = "BLE"; break;
@@ -941,6 +942,109 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					std::string outcode = compile(body, debugSymbols, true, locals);
 					code << outcode;
 					code << ".endif" << ifCount << '\n';
+				}
+				else
+				{
+					std::cerr << "Error: Expected ')' at line " << buf.current().m_lineno << '\n';
+					std::cerr << buf.current().m_lineno << ": " << getSourceLine(glob_src, buf.current().m_lineno);
+					drawArrows(buf.current().m_start, buf.current().m_end, buf.current().m_lineno);
+					exit(-1);
+				}
+			}
+			case TokenType::TT_WHILE: { //----------------------------------------------------------------------------------
+				if (debugSymbols)
+					code << "// " << getSourceLine(glob_src, current.m_lineno);
+
+				whileCount++;
+				int destCounter = 2;
+
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_OPEN_PAREN)
+				{
+					std::cerr << "Error: Expected '(' after while at line " << current.m_lineno << '\n';
+					std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+					drawArrows(current.m_start, current.m_end, current.m_lineno);
+					exit(-1);
+				}
+				Token next = buf.current();
+				
+				buf.advance();
+				if (!buf.hasNext() || !(isNumber(buf.current()) || buf.current().m_type == TokenType::TT_IDENTIFIER))
+				{
+					std::cerr << "Error: Expected number or identifier after ( at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
+					exit(-1);
+				}
+				next = buf.current();
+
+				if (next.m_type == TokenType::TT_IDENTIFIER)
+					code << "LLOD R" << destCounter++ << " R1 " << "-" << locals.getOffset(buf.current().m_val) << '\n';
+				else if (next.m_type == TokenType::TT_NUM)
+					code << "IMM R" << destCounter++ << " " << buf.current().m_val << '\n';\
+
+				buf.advance();
+				if (!buf.hasNext() || !isComparison(buf.current()))
+				{
+					std::cerr << "Error: Expected comparison operator after identifier/number at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
+					exit(-1);
+				}
+				next = buf.current();
+
+				std::string instruction;
+
+				switch (next.m_type)
+				{
+					case TokenType::TT_EQ:  instruction = "BRE"; break;
+					case TokenType::TT_NEQ: instruction = "BNE"; break;
+					case TokenType::TT_GT:  instruction = "BRG"; break;
+					case TokenType::TT_GTE: instruction = "BGE"; break;
+					case TokenType::TT_LT:  instruction = "BRL"; break;
+					case TokenType::TT_LTE: instruction = "BLE"; break;
+
+					default: break;
+				}
+				
+				buf.advance();
+				if (!buf.hasNext() || !(isNumber(buf.current()) || buf.current().m_type == TokenType::TT_IDENTIFIER))
+				{
+					std::cerr << "Error: Expected number or identifier after comparison at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
+					exit(-1);
+				}
+				next = buf.current();
+
+				if (next.m_type == TokenType::TT_NUM)
+					code << "IMM R" << destCounter++ << " " << next.m_val << '\n';
+				else if (next.m_type == TokenType::TT_IDENTIFIER)
+					code << "LLOD R" << destCounter++ << " R1 " << "-" << locals.getOffset(next.m_val) << '\n';
+
+				code << instruction << " " << ".while" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+				code << ".while"<< whileCount << '\n';
+				
+				buf.next();
+				if (buf.current().m_type == TokenType::TT_CLOSE_PAREN)
+				{
+					std::vector<Token> body;
+					size_t scope = 0;
+					while (buf.hasNext()) {
+						if (buf.current().m_type == TokenType::TT_OPEN_BRACE)
+							++scope;
+						else if (buf.current().m_type == TokenType::TT_CLOSE_BRACE) {
+							--scope;
+							if (scope == 0)
+								break;
+						}
+						body.push_back(buf.current());
+						buf.advance();
+					}
+					std::string outcode = compile(body, debugSymbols, true, locals);
+					code << outcode;
+					code << instruction << " " << ".while" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+					code << ".endwhile" << whileCount << '\n';
 				}
 				else
 				{

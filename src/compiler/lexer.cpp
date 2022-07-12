@@ -119,7 +119,8 @@ TokenTypeAndWord makeWord(const char& data, Buffer& buf, const std::string& sour
 
 	else if (word == "import")   return { TokenType::TT_IMPORT,     word, start, end };
 
-	else if (word == "urcl") return { TokenType::TT_URCL_BLOCK, word, start, end};
+	else if (word == "urcl")     return { TokenType::TT_URCL_BLOCK, word, start, end };
+	else if (word == "while")    return { TokenType::TT_WHILE,      word, start, end };
 
 	else                         return { TokenType::TT_IDENTIFIER, word, start, end };
 }

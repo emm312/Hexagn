@@ -1,5 +1,0 @@
-
-int8 main() {
-  string s1 = "h";
-  string s2 = "h";
-}

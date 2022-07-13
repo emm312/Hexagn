@@ -32,7 +32,7 @@ void parseSource(Linker& targetLinker, const std::filesystem::path& file)
 		
 		for (auto tok: _toks)
 		{
-			tok = replace(tok, "\t", "");
+			tok = replace(tok, "\t", "  ");
 
 			if (tok.starts_with("//"))
 				break;

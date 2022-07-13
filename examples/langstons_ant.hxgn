@@ -1,5 +1,7 @@
-import io.graphics;
+// Author: emm312
+// Description: Program that does 12000 iterations of Langton's ant simulation
 
+import io.graphics;
 
 int8 main() {
     int32 x = 50;

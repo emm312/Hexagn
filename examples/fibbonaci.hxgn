@@ -1,0 +1,12 @@
+import io;
+int8 main() {
+  int32 i = 0;
+  int32 cur = 1;
+  int32 prev = 0;
+  while (i < 10) {
+    cur = cur + prev;
+    prev = cur - prev;
+    printint(cur);
+    i = i + 1;
+  }
+}

@@ -14,6 +14,11 @@
 #include <compiler/string.h>
 #include <importer/importHelper.h>
 
+
+int ifCount = 0; //global variable to keep track of if statements
+int whileCount = 0; //global variable to keep track of while statements
+
+
 class TokenBuffer
 {
 private:
@@ -438,8 +443,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 		code << "MINSTACK 1024\n";
 		code << "MOV R1 SP\n\n";
 	}
-	int ifCount = 0;
-	int whileCount = 0;
+	
 	while (buf.hasNext())
 	{
 		const Token& current = buf.current();
@@ -960,7 +964,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					buf.advance();
 				}
 
-				const std::string& outcode = compile(body, debugSymbols, true, locals);
+				const std::string& outcode = compile(body, debugSymbols, true, locals, funcArgs);
 				code << outcode;
 				code << ".endif" << ifCount << '\n';
 
@@ -1081,7 +1085,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					buf.advance();
 				}
 
-				const std::string& outcode = compile(body, debugSymbols, true, locals);
+				const std::string& outcode = compile(body, debugSymbols, true, locals, funcArgs);
 				code << outcode;
 				code << "JMP .while" << whileCount << '\n';
 				code << ".endwhile" << whileCount << '\n';

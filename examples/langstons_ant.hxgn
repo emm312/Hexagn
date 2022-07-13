@@ -7,7 +7,7 @@ int8 main() {
     int32 x = 50;
     int32 y = 50;
     int32 direction = 0;
-    int32 length = 1000;
+    int32 length = 12000;
     int32 idx = 0;
     while (idx < length) {
         int32 colour = 0;

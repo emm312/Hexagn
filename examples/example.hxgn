@@ -1,3 +1,6 @@
+// Description: This file gives serves as an example file, while also documenting
+//              the current existing features of the compiler
+
 // Importing libraries
 import io;
 

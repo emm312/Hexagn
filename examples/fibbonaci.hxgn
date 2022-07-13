@@ -1,3 +1,6 @@
+// Author: emm311
+// Description: Program that calculates first 10 fibonacci numbers
+
 import io;
 int8 main() {
   int32 i = 0;

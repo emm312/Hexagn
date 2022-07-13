@@ -14,11 +14,6 @@
 #include <compiler/string.h>
 #include <importer/importHelper.h>
 
-
-int ifCount = 0; //global variable to keep track of if statements
-int whileCount = 0; //global variable to keep track of while statements
-
-
 class TokenBuffer
 {
 private:
@@ -428,6 +423,12 @@ inline const bool isComparison(const Token& tok)
 }
 
 Linker hexagnMainLinker;
+
+// Global variable to keep track of if statements
+size_t ifCount = 0;
+// Global variable to keep track of while statements
+size_t whileCount = 0;
+
 
 std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& _locals, const VarStack& funcArgs)
 {

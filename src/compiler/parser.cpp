@@ -438,12 +438,11 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 		code << "MINSTACK 1024\n";
 		code << "MOV R1 SP\n\n";
 	}
-
+	int ifCount = 0;
+	int whileCount = 0;
 	while (buf.hasNext())
 	{
 		const Token& current = buf.current();
-		int ifCount = 0;
-		int whileCount = 0;
 		switch (current.m_type)
 		{
 			// Variable or function definition

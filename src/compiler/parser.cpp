@@ -57,11 +57,29 @@ void VarStack::push(const std::string name, const Token type)
 		m_vars.push_back( { name, m_vars[m_vars.size() - 1].stackOffset + 1, type } );
 	else
 		m_vars.push_back( { name, 1, type } );
+
+	frameCounter++;
 }
 
 void VarStack::pop()
 {
 	m_vars.pop_back();
+}
+
+void VarStack::pop(size_t num)
+{
+	for (size_t _ = 0; _ < num; ++_) m_vars.pop_back();
+}
+
+void VarStack::startFrame()
+{
+	frameCounter = 0;
+}
+
+const size_t VarStack::popFrame()
+{
+	pop(frameCounter);
+	return frameCounter;
 }
 
 const size_t VarStack::getOffset(const std::string& name) const
@@ -422,22 +440,19 @@ inline const bool isComparison(const Token& tok)
 			|| tok.m_type == TokenType::TT_LTE;
 }
 
-Linker hexagnMainLinker;
-
 // Global variable to keep track of if statements
 size_t ifCount = 0;
 // Global variable to keep track of while statements
 size_t whileCount = 0;
 
-
-std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc, const VarStack& _locals, const VarStack& funcArgs)
+const std::string compile(Linker& linker, const std::vector<Token>& tokens, const bool& debugSymbols, const bool& globalContext, const bool& popFrame, const VarStack& _locals, const VarStack& funcArgs)
 {
 	TokenBuffer buf(tokens);
 	std::stringstream code;
 	VarStack locals = _locals;
+	locals.startFrame();
 
-	// Headers
-	if (!isFunc)
+	if (globalContext)
 	{
 		code << "BITS == 32\n";
 		code << "MINHEAP 4096\n";
@@ -574,7 +589,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				// Function definition
 				else if (next.m_type == TokenType::TT_OPEN_PAREN)
 				{
-					if (isFunc)
+					if (!globalContext && !popFrame)
 					{
 						std::cerr << "Error: Nested functions are not supported at line " << current.m_lineno << '\n';
 						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
@@ -681,8 +696,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						body.push_back(buf.current());
 						buf.advance();
 					}
-					func.code = compile(body, debugSymbols, true, VarStack(), funcArgsStack);
-					hexagnMainLinker.addFunction(func);
+
+					func.code = compile(linker, body, debugSymbols, false, false, VarStack(), funcArgsStack);
+					linker.addFunction(func);
 				}
 
 				break;
@@ -840,7 +856,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 						code << "PSH " << val << '\n';
 					}
 
-					const Function& func = hexagnMainLinker.getFunction(glob_src, current, argTypes);
+					const Function& func = linker.getFunction(glob_src, current, argTypes);
 
 					code << "CAL ." << func.getSignature() << '\n';
 
@@ -857,6 +873,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					code << "// " << getSourceLine(glob_src, current.m_lineno);
 
 				ifCount++;
+				// Save the current ifCount since it may be modified
+				size_t currIfCount = ifCount;
+
 				int destCounter = 2;
 
 				buf.advance();
@@ -923,9 +942,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				else if (next.m_type == TokenType::TT_IDENTIFIER)
 					code << "LLOD R" << destCounter++ << " R1 " << "-" << locals.getOffset(next.m_val) << '\n';
 
-				code << instruction << " " << ".if" << ifCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
-				code << "JMP .endif"<< ifCount << '\n';
-				code << ".if"<< ifCount << '\n';
+				code << instruction << " " << ".if" << currIfCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+				code << "JMP .endif"<< currIfCount << '\n';
+				code << ".if"<< currIfCount << '\n';
 
 				buf.advance();
 				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_CLOSE_PAREN)
@@ -965,9 +984,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					buf.advance();
 				}
 
-				const std::string& outcode = compile(body, debugSymbols, true, locals, funcArgs);
+				const std::string& outcode = compile(linker, body, debugSymbols, false, true, locals, funcArgs);
 				code << outcode;
-				code << ".endif" << ifCount << '\n';
+				code << ".endif" << currIfCount << '\n';
 
 				break;
 			}
@@ -1086,7 +1105,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					buf.advance();
 				}
 
-				const std::string& outcode = compile(body, debugSymbols, true, locals, funcArgs);
+				const std::string& outcode = compile(linker, body, debugSymbols, false, true, locals, funcArgs);
 				code << outcode;
 				code << "JMP .while" << whileCount << '\n';
 				code << ".endwhile" << whileCount << '\n';
@@ -1102,7 +1121,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 				while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
 				{
 					Token current = buf.current();
-					if (current.m_type != TokenType::TT_IDENTIFIER)
+					if (current.m_type != TokenType::TT_IDENTIFIER && current.m_type != TokenType::TT_URCL_BLOCK /* Since urcl literal becomes a urcl token */)
 					{
 						std::cerr << "Error: Expected module name after import at line " << current.m_lineno << '\n';
 						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
@@ -1123,11 +1142,11 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					current = buf.current();
 
 					if (current.m_type == TokenType::TT_SEMICOLON) break;
-					else if (current.m_type == TokenType::TT_DOT)
+					else if (current.m_type == TokenType::TT_DOT || current.m_type == TokenType::TT_COLON)
 						libName += current.m_val;
 					else
 					{
-						std::cerr << "Error: Expected '.' after module/submodule name at line " << current.m_lineno << '\n';
+						std::cerr << "Error: Expected '.' or ':' or ';' after module/submodule name at line " << current.m_lineno << '\n';
 						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
 						drawArrows(current.m_start, current.m_end, current.m_lineno);
 						exit(-1);
@@ -1136,7 +1155,7 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 					buf.advance();
 				}
 
-				importLibrary(hexagnMainLinker, libName);
+				importLibrary(linker, libName);
 
 				break;
 			}
@@ -1171,10 +1190,10 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 		buf.advance();
 	}
 
-	if (!isFunc)
+	if (globalContext)
 	{
 		code << "\nCAL ._Hx4maini8\nMOV SP R1\nHLT\n\n";
-		for (const auto& func: hexagnMainLinker.getFunctions())
+		for (const auto& func: linker.getFunctions())
 		{
 			code << "." << func.getSignature() << '\n';
 
@@ -1190,6 +1209,9 @@ std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, 
 		for (const auto& str: getStrings())
 			code << str << "\n\n";
 	}
+
+	if (popFrame)
+		code << "ADD SP SP " << locals.popFrame() << '\n';
 
 	return code.str();
 }

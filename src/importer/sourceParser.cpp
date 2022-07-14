@@ -4,13 +4,14 @@
 #include <fstream>
 #include <sstream>
 
+#include <util.h>
+#include <compiler/lexer.h>
 #include <compiler/parser.h>
 #include <compiler/token.h>
-#include <util.h>
 
 const TokenType strToType(const std::string& val);
 
-void parseSource(Linker& targetLinker, const std::filesystem::path& file)
+void parseURCLSource(Linker& targetLinker, const std::filesystem::path& file)
 {
 	// Storing entire source
 	std::string src;
@@ -153,4 +154,44 @@ const TokenType strToType(const std::string& val)
 	else if (val == "string")  return TokenType::TT_STRING;
 	else if (val == "char")    return TokenType::TT_CHARACTER;
 	else                       return (TokenType) -1;
+}
+
+void parseHexagnSource(Linker& targetLinker, const std::filesystem::path& file)
+{
+	// Storing entire source
+	std::string src;
+
+	// File stream to read input file
+	std::ifstream inputFileStream(file.string());
+
+	if (!inputFileStream.is_open())
+	{
+		std::cout << "Error: Could not open input file: " << file.string() << '\n';
+		exit(-1);
+	}
+	
+	// Get all non-comment tokens into src
+	std::string str;
+	while(std::getline(inputFileStream, str))
+	{
+		auto _toks = split(str, ' ');
+
+		for (auto tok: _toks)
+		{
+			tok = replace(tok, "\t", "");
+
+			if (tok.starts_with("//"))
+				break;
+
+			src += tok + ' ';
+		}
+
+		src += '\n';
+	}
+
+	// We dont need the input file stream anymore, so close it
+	inputFileStream.close();
+
+	const std::vector<Token>& toks = tokenize(src);
+	compile(targetLinker, toks, true);
 }

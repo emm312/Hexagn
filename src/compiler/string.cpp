@@ -12,7 +12,7 @@ struct CompilerString
 static std::vector<CompilerString> strings;
 static size_t strCount = 0;
 
-std::string registerString(const std::string& str)
+const std::string registerString(const std::string& str)
 {
 	for (const auto& s: strings)
 		if (s.value == str)
@@ -48,7 +48,7 @@ std::string registerString(const std::string& str)
 	return signature;
 }
 
-std::vector<std::string> getStrings()
+const std::vector<std::string> getStrings()
 {
 	std::vector<std::string> retStrings;
 	for (const auto& s: strings)

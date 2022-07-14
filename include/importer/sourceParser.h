@@ -5,6 +5,7 @@
 
 #include <compiler/linker.h>
 
-void parseSource(Linker& targetLinker, const std::filesystem::path& file);
+void parseURCLSource(Linker& targetLinker, const std::filesystem::path& file);
+void parseHexagnSource(Linker& targetLinker, const std::filesystem::path& file);
 
 #endif // SOURCE_PARSER_H

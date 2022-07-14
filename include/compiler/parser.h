@@ -12,6 +12,8 @@ extern const std::string SignedIntTypes[];
 extern const std::string UnsignedIntTypes[];
 extern const std::string FloatTypes[];
 
+class Linker;
+
 class VarStack
 {
 private:
@@ -23,10 +25,16 @@ private:
 	};
 
 	std::vector<Variable> m_vars;
+	size_t frameCounter;
 
 public:
 	void push(const std::string name, const Token type);
 	void pop();
+	void pop(size_t num);
+
+	void startFrame();
+	const size_t popFrame();
+
 	const size_t getOffset(const std::string& name) const;
 	const Token  getType  (const std::string& name) const;
 	const size_t getSize  ()                        const;
@@ -44,6 +52,6 @@ struct Function
 
 bool operator ==(const Token& lhs, const Token& rhs);
 
-std::string compile(const std::vector<Token>& tokens, const bool& debugSymbols, const bool& isFunc = false, const VarStack& _locals = VarStack(), const VarStack& funcArgs = VarStack());
+const std::string compile(Linker& linker, const std::vector<Token>& tokens, const bool& debugSymbols, const bool& globalContext = true, const bool& popFrame = false, const VarStack& _locals = VarStack(), const VarStack& funcArgs = VarStack());
 
 #endif // PARSER_H

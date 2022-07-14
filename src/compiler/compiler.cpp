@@ -1,13 +1,15 @@
+#include <compiler/compiler.h>
+
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <vector>
 #include <fstream>
 
-#include <compiler/compiler.h>
 #include <util.h>
 #include <compiler/lexer.h>
 #include <compiler/parser.h>
+#include <compiler/linker.h>
 
 void compiler(const std::string& inputFileName, const std::string& outputFileName, const bool& debugSymbols)
 {
@@ -22,7 +24,7 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 		std::cout << "Error: Could not open input file: " << inputFileName << '\n';
 		exit(-1);
 	}
-	
+
 	// Get all non-comment tokens into src
 	std::string str;
 	while(std::getline(inputFileStream, str))
@@ -42,10 +44,12 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 		src += '\n';
 	}
 
+	Linker hexagnMainLinker;
+
 	// We dont need the input file stream anymore, so close it
 	inputFileStream.close();
-	auto toks = tokenize(src);
+	const auto& toks = tokenize(src);
 	// for (const auto& tok: toks)
 	// 	std::cout << tok.toString() + '\n';
-	std::ofstream(outputFileName) << compile(toks, debugSymbols);
+	std::ofstream(outputFileName) << compile(hexagnMainLinker, toks, debugSymbols);
 }

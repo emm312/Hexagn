@@ -23,9 +23,21 @@ static std::vector<std::filesystem::path> libPaths = {
 
 void importLibrary(Linker& targetLinker, const std::string& libName)
 {
-	const std::string libPath = replace(libName, ".", "/");
+	const std::vector<std::string>& vec = split(libName, ':');
+
+	if (vec.size() > 2)
+	{
+		std::cerr << "Error: Malformed file import " << libName << '\n';
+		exit(-1);
+	}
+
+	std::string libPath = replace(vec[0], ".", "/");
+	if (vec.size() == 2)
+		libPath += '/' + vec[1];
+
 	std::filesystem::path libDir;
 	bool libFound = false;
+
 	for (const auto& path: libPaths)
 	{
 		const std::filesystem::path libDirPath = path / libPath;
@@ -43,9 +55,31 @@ void importLibrary(Linker& targetLinker, const std::string& libName)
 		exit(-1);
 	}
 
-	for (const auto& file: std::filesystem::directory_iterator(libDir))
-	{
-		if (file.is_directory()) continue;
-		parseSource(targetLinker, file);
-	}
+	if (vec.size() == 1)
+		for (const auto& file: std::filesystem::directory_iterator(libDir))
+		{
+			if (file.is_directory()) continue;
+
+			const std::filesystem::path filePath = file;
+
+			if (filePath.extension() == ".urcl")
+				parseURCLSource(targetLinker, file);
+			else if (filePath.extension() == ".hxgn")
+				parseHexagnSource(targetLinker, file);
+			else
+			{
+				std::cerr << "Error: Unrecognized file format for library file: " << file << '\n';
+				exit(-1);
+			}
+		}
+	else
+		if (libDir.extension() == ".urcl")
+			parseURCLSource(targetLinker, libDir);
+		else if (libDir.extension() == ".hxgn")
+			parseHexagnSource(targetLinker, libDir);
+		else
+		{
+			std::cerr << "Error: Unrecognized file format for library file: " << libDir << '\n';
+			exit(-1);
+		}
 }

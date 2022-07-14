@@ -127,6 +127,7 @@ const std::string getTypeName(const Token& type)
 const Function Linker::getFunction(const std::string& src, const Token& name, const std::vector<Token>& argTypes) const
 {
 	for (const auto& func: linkerFunctions)
+	{
 		if (func.name.m_val == name.m_val)
 		{
 			if (func.argTypes.size() != argTypes.size()) break;
@@ -135,18 +136,20 @@ const Function Linker::getFunction(const std::string& src, const Token& name, co
 				if (isIntegerDataType(func.argTypes[i]))
 				{
 					if (!isIntegerDataType(argTypes[i]) && !isNumber(argTypes[i]))
-						goto loopEnd;
+						goto nextFunc;
 				}
 				else if (isFloatDataType(func.argTypes[i]) && !isFloatDataType(argTypes[i]))
-					goto loopEnd;
+					goto nextFunc;
 				else if (func.argTypes[i].m_type == TokenType::TT_STRING && argTypes[i].m_type != TokenType::TT_STRING)
-					goto loopEnd;
+					goto nextFunc;
 			}
 
 			return func;
 		}
-	
-	loopEnd:
+
+		nextFunc:;
+	}
+
 	std::cerr << "Error: Function '" << name.m_val << "' with arguments ";
 	for (const Token& arg: argTypes)
 		std::cerr << getTypeName(arg) << ' ';

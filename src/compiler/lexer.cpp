@@ -379,6 +379,13 @@ std::vector<Token> tokenize(std::string source)
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
 		}
 
+		else if (data == ':')
+		{
+			toks.push_back(Token(lineno, TokenType::TT_COLON, std::string(1, data),
+								 buf.pos() - find_nth(source, '\n', lineno - 1),
+								 buf.pos() - find_nth(source, '\n', lineno - 1)));
+		}
+
 		else if (isalpha(data) || data == '_')
 		{
 			auto [type, word, start, end] = makeWord(data, buf, source, lineno);

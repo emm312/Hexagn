@@ -4,7 +4,8 @@
 #include <vector>
 
 #include <compiler/token.h>
-#include <compiler/parser.h>
+
+struct Function;
 
 class Linker
 {

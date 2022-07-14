@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-std::string registerString(const std::string& str);
-std::vector<std::string> getStrings();
+const std::string registerString(const std::string& str);
+const std::vector<std::string> getStrings();
 
 #endif // STRING_H

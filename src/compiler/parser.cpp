@@ -265,7 +265,7 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 					exit(-1);
 				}
 
-				return { "R2", "LLOD R2 R1 " + std::to_string(index) + '\n' };
+				return { "R2", "LLOD R2 R1 " + std::to_string(index + 1) + '\n' };
 			}
 			else
 				return { "R2", "LLOD R2 R1 -" + std::to_string(index) + '\n' };
@@ -738,6 +738,8 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 							drawArrows(identifier.m_start, identifier.m_end, identifier.m_lineno);
 							exit(-1);
 						}
+
+						offset++;
 					}
 
 					buf.advance();

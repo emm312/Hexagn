@@ -1,0 +1,113 @@
+// Author: emm312
+// THIS IS A FAILED EXAMPLE, IT WONT RUN CORRECTLY
+
+import io.graphics;
+import io.mouse;
+
+int8 main() {
+    int32 idxx = 1;
+    int32 idxy = 1;
+
+    int32 screenlenx = 32;
+    //urcl "IN R2 %X";
+    //urcl "POP R0";
+    //urcl "PSH R2";
+    int32 screenleny = 32;
+    //urcl "IN R2 %Y";
+    //urcl "POP R0";
+    //urcl "PSH R2";
+
+    int32 hasGoneToStart = 0;
+    int32 hasPlacedPixel = 0;
+    while (hasGoneToStart == 0) {
+        
+        int32 mousex = 0;
+        getmousex();
+        urcl "POP R0";
+        urcl "PSH R2";
+
+        int32 mousey = 0;
+        getmousey();
+        urcl "POP R0";
+        urcl "PSH R2";
+
+        if (mousex == 0) {
+            if (mousey == 0) {
+                if (hasPlacedPixel == 1) {
+                    hasGoneToStart = 1;
+                }
+            }
+        }
+        int32 mousebutton = 0;
+        getmousebuttons();
+        urcl "POP R0";
+        urcl "PSH R2";
+
+        if (mousebutton == 1) {
+            setpixel(mousex, mousey, 1);
+            hasPlacedPixel = 1;
+        }
+    }
+    while (1==1) {
+        idxx = 0;
+        while (idxx < screenlenx) {
+            while (idxy < screenleny) {
+                int32 neighbours = 0;
+                int32 nidxx = idxx - 1;
+                int32 nidxy = idxy - 1;
+                int32 loopendx = idxx + 1;
+                int32 loopendy = idxy + 1;
+
+                int32 isDead = 0;
+                getpixel(idxx, idxy);
+                urcl "POP R0";
+                urcl "PSH R2";
+
+                // count neighbours
+                while (nidxx <= loopendx) {
+                    while (nidxy <= loopendy) {
+                        int32 currpixel = 0;
+                        getpixel(nidxx, nidxy);
+                        urcl "POP R0";
+                        urcl "PSH R2";
+                        if (currpixel == 1) {
+                            if (nidxx != idxx) {
+                                if (nidxy != idxy) {
+                                    neighbours = neighbours + 1;
+                                }
+                            }
+                        }
+                        nidxy = nidxy + 1;
+                    }
+                    nidxy = idxy - 1;
+                    nidxx = nidxx + 1;
+                }
+                urcl "OUT %BUFFER 1";
+                if (neighbours < 2) {
+                    setpixel(idxx, idxy, 0);
+                }
+                if (neighbours > 3) {
+                    setpixel(idxx, idxy, 0);
+                }
+                if (isDead == 0) {
+                    if (neighbours == 2) {
+                        setpixel(idxx, idxy, 1);
+                    }
+                    if (neighbours == 3) {
+                        setpixel(idxx, idxy, 1);
+                    }
+                }
+                if (isDead == 1) {
+                    if (neighbours == 3) {
+                        setpixel(idxx, idxy, 1);
+                    }
+                }
+
+                idxy = idxy+1;
+            }
+            idxy = 0;
+            idxx = idxx + 1;
+        }
+        urcl "OUT %BUFFER 0";
+    }
+}

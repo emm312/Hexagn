@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <filesystem>
 
 #include <importer/sourceParser.h>
@@ -20,6 +21,9 @@ static std::vector<std::filesystem::path> libPaths = {
 	// For dev
 	"./hexagn-stdlib/"
 };
+
+// Protection against importing same file twice
+static std::vector<std::filesystem::path> imported;
 
 void importLibrary(Linker& targetLinker, const std::string& libName)
 {
@@ -55,12 +59,19 @@ void importLibrary(Linker& targetLinker, const std::string& libName)
 		exit(-1);
 	}
 
+	// We add it at the start because
+	// 1) If theres an error, the entire program quits anyways
+	// 2) Prevent file from importing itself
+
 	if (vec.size() == 1)
 		for (const auto& file: std::filesystem::directory_iterator(libDir))
 		{
 			if (file.is_directory()) continue;
 
+
 			const std::filesystem::path filePath = file;
+			if (std::find(imported.begin(), imported.end(), filePath) != imported.end()) return;
+			imported.push_back(filePath);
 
 			if (filePath.extension() == ".urcl")
 				parseURCLSource(targetLinker, file);
@@ -73,6 +84,10 @@ void importLibrary(Linker& targetLinker, const std::string& libName)
 			}
 		}
 	else
+	{
+		if (std::find(imported.begin(), imported.end(), libDir) != imported.end()) return;
+		imported.push_back(libDir);
+
 		if (libDir.extension() == ".urcl")
 			parseURCLSource(targetLinker, libDir);
 		else if (libDir.extension() == ".hxgn")
@@ -82,4 +97,5 @@ void importLibrary(Linker& targetLinker, const std::string& libName)
 			std::cerr << "Error: Unrecognized file format for library file: " << libDir << '\n';
 			exit(-1);
 		}
+	}
 }

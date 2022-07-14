@@ -999,9 +999,11 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					code << "// " << getSourceLine(glob_src, current.m_lineno);
 
 				whileCount++;
+				size_t currWhileCount = whileCount;
+
 				int destCounter = 2;
 
-				code << ".while"<< whileCount << '\n';
+				code << ".while"<< currWhileCount << '\n';
 
 				buf.advance();
 				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_OPEN_PAREN)
@@ -1067,7 +1069,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				else if (next.m_type == TokenType::TT_IDENTIFIER)
 					code << "LLOD R" << destCounter++ << " R1 " << "-" << locals.getOffset(next.m_val) << '\n';
 
-				code << instruction << " " << ".endwhile" << whileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
+				code << instruction << " " << ".endwhile" << currWhileCount << " R" << destCounter-2 << " R" << destCounter-1 << "\n";
 
 				buf.advance();
 				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_CLOSE_PAREN)
@@ -1109,8 +1111,8 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 
 				const std::string& outcode = compile(linker, body, debugSymbols, false, true, locals, funcArgs);
 				code << outcode;
-				code << "JMP .while" << whileCount << '\n';
-				code << ".endwhile" << whileCount << '\n';
+				code << "JMP .while" << currWhileCount << '\n';
+				code << ".endwhile" << currWhileCount << '\n';
 
 				break;
 			}

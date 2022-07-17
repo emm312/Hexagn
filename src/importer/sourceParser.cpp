@@ -193,5 +193,5 @@ void parseHexagnSource(Linker& targetLinker, const std::filesystem::path& file)
 	inputFileStream.close();
 
 	const std::vector<Token>& toks = tokenize(src);
-	compile(targetLinker, toks, true);
+	compile(targetLinker, toks, false, true, false);
 }

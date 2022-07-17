@@ -445,14 +445,14 @@ size_t ifCount = 0;
 // Global variable to keep track of while statements
 size_t whileCount = 0;
 
-const std::string compile(Linker& linker, const std::vector<Token>& tokens, const bool& debugSymbols, const bool& globalContext, const bool& popFrame, const VarStack& _locals, const VarStack& funcArgs)
+const std::string compile(Linker& linker, const std::vector<Token>& tokens, const bool& debugSymbols, const bool& emitFunctions, const bool& emitEntryPoint, const bool& isSubScope, const bool& popFrame, const VarStack& _locals, const VarStack& funcArgs)
 {
 	TokenBuffer buf(tokens);
 	std::stringstream code;
 	VarStack locals = _locals;
 	locals.startFrame();
 
-	if (globalContext)
+	if (emitEntryPoint)
 	{
 		code << "BITS == 32\n";
 		code << "MINHEAP 4096\n";
@@ -473,6 +473,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 			case TokenType::TT_STRING:
 			case TokenType::TT_CHARACTER:
 			{
+				if (debugSymbols)
+					code << "// " << getSourceLine(glob_src, current.m_lineno);
+
 				buf.advance();
 				if (!buf.hasNext())
 				{
@@ -485,9 +488,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				const Token& identifier = buf.current();
 
 				buf.advance();
-				if (!buf.hasNext() || !(buf.current().m_type == TokenType::TT_ASSIGN || buf.current().m_type == TokenType::TT_OPEN_PAREN))
+				if (!buf.hasNext() || (buf.current().m_type != TokenType::TT_ASSIGN && buf.current().m_type != TokenType::TT_OPEN_PAREN && buf.current().m_type != TokenType::TT_SEMICOLON))
 				{
-					std::cerr << "Error: Expected '=' or '(' at line " << next.m_lineno << '\n';
+					std::cerr << "Error: Expected '=' or ';' or '(' at line " << next.m_lineno << '\n';
 					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
 					drawArrows(next.m_start, next.m_end, next.m_lineno);
 					exit(-1);
@@ -505,9 +508,6 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 						exit(-1);
 					}
 
-					if (debugSymbols)
-						code << "// " << getSourceLine(glob_src, current.m_lineno);
-
 					buf.advance();
 					if (!buf.hasNext())
 					{
@@ -520,7 +520,17 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					std::vector<Token> expr;
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
 					{
-						expr.push_back(buf.current());
+						const Token& curr = buf.current();
+
+						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER)
+						{
+							std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer tokens at line " << curr.m_lineno << '\n';
+							std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+							drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+							exit(-1);
+						}
+
+						expr.push_back(curr);
 						buf.advance();
 					}
 
@@ -586,10 +596,17 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					locals.push(identifier.m_val, current);
 				}
 
+				// Variable declaration
+				else if (next.m_type == TokenType::TT_SEMICOLON)
+				{
+					locals.push(identifier.m_val, current);
+					code << "DEC SP SP";
+				}
+
 				// Function definition
 				else if (next.m_type == TokenType::TT_OPEN_PAREN)
 				{
-					if (!globalContext && !popFrame)
+					if (isSubScope)
 					{
 						std::cerr << "Error: Nested functions are not supported at line " << current.m_lineno << '\n';
 						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
@@ -697,7 +714,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 						buf.advance();
 					}
 
-					func.code = compile(linker, body, debugSymbols, false, false, VarStack(), funcArgsStack);
+					func.code = compile(linker, body, debugSymbols, false, false, false, true, VarStack(), funcArgsStack);
 					linker.addFunction(func);
 				}
 
@@ -714,14 +731,15 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				size_t offset = locals.getOffset(identifier.m_val);
 				bool isInArgs = false;
 
-				Token next = buf.next();
-				if (!buf.hasNext() && !(next.m_type == TokenType::TT_ASSIGN || next.m_type == TokenType::TT_OPEN_PAREN))
+				buf.advance();
+				if (!buf.hasNext() && !(buf.current().m_type == TokenType::TT_ASSIGN || buf.current().m_type == TokenType::TT_OPEN_PAREN))
 				{
-					std::cerr << "Error: Expected '=' or function call at line " << next.m_lineno << '\n';
-					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
-					drawArrows(next.m_start, next.m_end, next.m_lineno);
+					std::cerr << "Error: Expected '=' or function call after identifier at line " << current.m_lineno << '\n';
+					std::cerr << current.m_lineno << ": " << getSourceLine(glob_src,current.m_lineno);
+					drawArrows(current.m_start, current.m_end, current.m_lineno);
 					exit(-1);
 				}
+				Token next = buf.current();
 
 				// Variable reassignment
 				if (next.m_type == TokenType::TT_ASSIGN)
@@ -754,7 +772,17 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					std::vector<Token> expr;
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
 					{
-						expr.push_back(buf.current());
+						const Token& curr = buf.current();
+
+						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER)
+						{
+							std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer tokens at line " << curr.m_lineno << '\n';
+							std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+							drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+							exit(-1);
+						}
+
+						expr.push_back(curr);
 						buf.advance();
 					}
 
@@ -986,7 +1014,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					buf.advance();
 				}
 
-				const std::string& outcode = compile(linker, body, debugSymbols, false, true, locals, funcArgs);
+				const std::string& outcode = compile(linker, body, debugSymbols, false, false, true, true, locals, funcArgs);
 				code << outcode;
 				code << ".endif" << currIfCount << '\n';
 
@@ -1109,7 +1137,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					buf.advance();
 				}
 
-				const std::string& outcode = compile(linker, body, debugSymbols, false, true, locals, funcArgs);
+				const std::string& outcode = compile(linker, body, debugSymbols, false, false, true, true, locals, funcArgs);
 				code << outcode;
 				code << "JMP .while" << currWhileCount << '\n';
 				code << ".endwhile" << currWhileCount << '\n';
@@ -1124,16 +1152,16 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				buf.advance();
 				while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
 				{
-					Token current = buf.current();
-					if (current.m_type != TokenType::TT_IDENTIFIER && current.m_type != TokenType::TT_URCL_BLOCK /* Since urcl literal becomes a urcl token */)
+					Token curr = buf.current();
+					if (curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_URCL_BLOCK /* Since urcl literal becomes a urcl token */)
 					{
-						std::cerr << "Error: Expected module name after import at line " << current.m_lineno << '\n';
-						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
-						drawArrows(current.m_start, current.m_end, current.m_lineno);
+						std::cerr << "Error: Expected module name after import at line " << curr.m_lineno << '\n';
+						std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+						drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
 						exit(-1);
 					}
 
-					libName += current.m_val;
+					libName += curr.m_val;
 
 					buf.advance();
 					if (!buf.hasNext())
@@ -1143,16 +1171,16 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 						drawArrows(current.m_start, current.m_end, current.m_lineno);
 						exit(-1);
 					}
-					current = buf.current();
+					curr = buf.current();
 
-					if (current.m_type == TokenType::TT_SEMICOLON) break;
-					else if (current.m_type == TokenType::TT_DOT || current.m_type == TokenType::TT_COLON)
-						libName += current.m_val;
+					if (curr.m_type == TokenType::TT_SEMICOLON) break;
+					else if (curr.m_type == TokenType::TT_DOT || curr.m_type == TokenType::TT_COLON)
+						libName += curr.m_val;
 					else
 					{
-						std::cerr << "Error: Expected '.' or ':' or ';' after module/submodule name at line " << current.m_lineno << '\n';
-						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
-						drawArrows(current.m_start, current.m_end, current.m_lineno);
+						std::cerr << "Error: Expected '.' or ':' or ';' after module/submodule name at line " << curr.m_lineno << '\n';
+						std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+						drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
 						exit(-1);
 					}
 
@@ -1166,6 +1194,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 
 			case TokenType::TT_URCL_BLOCK:
 			{
+				if (debugSymbols)
+					code << "// " << getSourceLine(glob_src, current.m_lineno);
+
 				buf.advance();
 				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_STR)
 				{
@@ -1174,10 +1205,63 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					drawArrows(current.m_start, current.m_end, current.m_lineno);
 					exit(-1);
 				}
+				const Token& curr = buf.current();
 
+				code << curr.m_val << "\n\n";
+
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_SEMICOLON)
+				{
+					std::cerr << "Error: Expected `;` after URCL code block at line " << curr.m_lineno << '\n';
+					std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+					drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+					exit(-1);
+				}
+
+				break;
+			}
+
+			case TokenType::TT_RETURN:
+			{
 				if (debugSymbols)
-					code << "// " << getSourceLine(glob_src, buf.current().m_lineno);
-				code << buf.current().m_val << "\n\n";
+					code << "// " << getSourceLine(glob_src, current.m_lineno);
+
+				buf.advance();
+				if (!buf.hasNext())
+				{
+					std::cerr << "Error: Expected expression after return at line " << current.m_lineno << '\n';
+					std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+					drawArrows(current.m_start, current.m_end, current.m_lineno);
+					exit(-1);
+				}
+
+				std::vector<Token> expr;
+				while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
+				{
+					const Token& curr = buf.current();
+
+					if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER)
+					{
+						std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer tokens at line " << curr.m_lineno << '\n';
+						std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+						drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+						exit(-1);
+					}
+
+					expr.push_back(curr);
+					buf.advance();
+				}
+
+				auto [val, _code] = parseExpr(expr, locals, funcArgs);
+				if (_code.size() == 0)
+					code << "IMM R2 " << val << "\n\n";
+				else
+					code << _code << '\n';
+				
+				// cdecl calling convention exit
+				code << "MOV SP R1\nPOP R1\nRET\n\n";
+
+				break;
 			}
 
 			case TokenType::TT_SEMICOLON: break;
@@ -1194,12 +1278,17 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 		buf.advance();
 	}
 
-	if (globalContext)
-	{
+	if (emitEntryPoint)
 		code << "\nCAL ._Hx4maini8\nMOV SP R1\nHLT\n\n";
-		for (const auto& func: linker.getFunctions())
+
+	if (popFrame)
+		code << "ADD SP SP " << locals.popFrame() << '\n';
+	
+	if (emitFunctions)
+	{
+		for (const Function& func: linker.getFunctions())
 		{
-			code << "." << func.getSignature() << '\n';
+			code << '.' << func.getSignature() << '\n';
 
 			// cdecl calling convention entry
 			code << "PSH R1\nMOV R1 SP\n\n";
@@ -1210,12 +1299,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 			code << "MOV SP R1\nPOP R1\nRET\n\n";
 		}
 
-		for (const auto& str: getStrings())
+		for (const std::string& str: getStrings())
 			code << str << "\n\n";
 	}
-
-	if (popFrame)
-		code << "ADD SP SP " << locals.popFrame() << '\n';
 
 	return code.str();
 }

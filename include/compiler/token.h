@@ -52,6 +52,8 @@ enum class TokenType: size_t
 	TT_COLON,
 
 	TT_URCL_BLOCK,
+
+	TT_RETURN,
 };
 
 extern const std::string KEYWORDS[];

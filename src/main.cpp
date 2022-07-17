@@ -3,6 +3,7 @@
 
 #include <util.h>
 #include <compiler/compiler.h>
+#include <importer/importHelper.h>
 
 int main(int argc, char* argv[])
 {
@@ -15,6 +16,7 @@ int main(int argc, char* argv[])
 	std::string inputFileName;
 	std::string outputFileName = "out.urcl";
 	bool debugSymbols = false;
+	bool emitEntryPoint = true;
 
 	// Reused index variable for arguments
 	int index = 1;
@@ -34,8 +36,26 @@ int main(int argc, char* argv[])
 			}
 			outputFileName = argv[index];
 		}
+
 		else if (val == "-g")
 			debugSymbols = true;
+
+		else if (val == "-L")
+		{
+			index++;
+
+			if (index >= argc)
+			{
+				std::cerr << "\033[1m" << argv[0] << ": \033[31merror: \033[0mMissing path after '-L'\n";
+				return -1;
+			}
+
+			addPath(argv[index]);
+		}
+
+		else if (val == "-no-main")
+			emitEntryPoint = false;
+
 		else
 			inputFileName = val;
 
@@ -48,5 +68,5 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	
-	compiler(inputFileName, outputFileName, debugSymbols);
+	compiler(inputFileName, outputFileName, debugSymbols, emitEntryPoint);
 }

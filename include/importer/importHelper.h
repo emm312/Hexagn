@@ -6,4 +6,6 @@
 
 void importLibrary(Linker& targetLinker, const std::string& libName);
 
+void addPath(const std::string& path);
+
 #endif // IMPORT_HELPER_H

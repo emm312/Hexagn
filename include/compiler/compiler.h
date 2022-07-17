@@ -3,6 +3,6 @@
 
 #include <string>
 
-void compiler(const std::string& inputFileName, const std::string& outputFileName, const bool& debugSymbols);
+void compiler(const std::string& inputFileName, const std::string& outputFileName, const bool& debugSymbols, const bool& emitEntryPoint);
 
 #endif // COMPILER_H

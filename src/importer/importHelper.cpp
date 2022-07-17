@@ -99,3 +99,9 @@ void importLibrary(Linker& targetLinker, const std::string& libName)
 		}
 	}
 }
+
+void addPath(const std::string& path)
+{
+	const std::filesystem::path _path = path;
+	libPaths.push_back(_path);
+}

@@ -11,7 +11,7 @@
 #include <compiler/parser.h>
 #include <compiler/linker.h>
 
-void compiler(const std::string& inputFileName, const std::string& outputFileName, const bool& debugSymbols)
+void compiler(const std::string& inputFileName, const std::string& outputFileName, const bool& debugSymbols, const bool& emitEntryPoint)
 {
 	// Storing entire source
 	std::string src;
@@ -51,5 +51,5 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 	const auto& toks = tokenize(src);
 	// for (const auto& tok: toks)
 	// 	std::cout << tok.toString() + '\n';
-	std::ofstream(outputFileName) << compile(hexagnMainLinker, toks, debugSymbols);
+	std::ofstream(outputFileName) << compile(hexagnMainLinker, toks, debugSymbols, true, emitEntryPoint);
 }

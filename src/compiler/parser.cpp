@@ -522,9 +522,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					{
 						const Token& curr = buf.current();
 
-						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER)
+						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_OPEN_PAREN && curr.m_type != TokenType::TT_CLOSE_PAREN)
 						{
-							std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer tokens at line " << curr.m_lineno << '\n';
+							std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer or non-parenthesis tokens at line " << curr.m_lineno << '\n';
 							std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
 							drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
 							exit(-1);
@@ -774,9 +774,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					{
 						const Token& curr = buf.current();
 
-						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER)
+						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_OPEN_PAREN && curr.m_type != TokenType::TT_CLOSE_PAREN)
 						{
-							std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer tokens at line " << curr.m_lineno << '\n';
+							std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer or non-parenthesis tokens at line " << curr.m_lineno << '\n';
 							std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
 							drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
 							exit(-1);
@@ -1240,9 +1240,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				{
 					const Token& curr = buf.current();
 
-					if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER)
+					if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_OPEN_PAREN && curr.m_type != TokenType::TT_CLOSE_PAREN)
 					{
-						std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer tokens at line " << curr.m_lineno << '\n';
+						std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer or non-parenthesis tokens at line " << curr.m_lineno << '\n';
 						std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
 						drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
 						exit(-1);

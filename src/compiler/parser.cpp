@@ -122,6 +122,7 @@ bool isOperator(const Token& tok)
 		case TokenType::TT_MINUS:
 		case TokenType::TT_MULT:
 		case TokenType::TT_DIV:
+		case TokenType::TT_MOD:
 			return true;
 
 		default:

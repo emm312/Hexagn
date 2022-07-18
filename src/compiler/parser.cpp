@@ -523,7 +523,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					{
 						const Token& curr = buf.current();
 
-						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_OPEN_PAREN && curr.m_type != TokenType::TT_CLOSE_PAREN)
+						if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_OPEN_PAREN && curr.m_type != TokenType::TT_CLOSE_PAREN && curr.m_type != TokenType::TT_STR)
 						{
 							std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer or non-parenthesis tokens at line " << curr.m_lineno << '\n';
 							std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);

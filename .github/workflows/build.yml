@@ -12,6 +12,7 @@ jobs:
          sudo apt install g++-11
          sudo mv /usr/bin/g++-11 /usr/bin/g++
          whereis g++
+         ls
       - name: Build
         shell: bash
         run: make
@@ -25,5 +26,5 @@ jobs:
         uses: actions/upload-artifact@v3.1.0
         with:
          name: libs
-         path: ./hexagn-stdlib/
+         path: ./hexagn-stdlib
          retention-days: 90

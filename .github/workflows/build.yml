@@ -21,3 +21,9 @@ jobs:
          name: hexagn
          path: ./hexagn
          retention-days: 90
+      - name: Upload libs
+        uses: actions/upload-artifact@v3.1.0
+        with:
+         name: libs
+         path: ./hexagn-stdlib/
+         retention-days: 90

@@ -5,6 +5,8 @@ jobs:
       runs-on: ubuntu-latest
       steps:
       - uses: actions/checkout@v2
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
       - name: G++ install
         shell: bash
         run: |
@@ -12,6 +14,7 @@ jobs:
          sudo apt install g++-11
          sudo mv /usr/bin/g++-11 /usr/bin/g++
          whereis g++
+         ls
       - name: Build
         shell: bash
         run: make
@@ -20,4 +23,10 @@ jobs:
         with:
          name: hexagn
          path: ./hexagn
+         retention-days: 90
+      - name: Upload libs
+        uses: actions/upload-artifact@v3.1.0
+        with:
+         name: libs
+         path: ./hexagn-stdlib
          retention-days: 90

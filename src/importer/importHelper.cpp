@@ -68,7 +68,6 @@ void importLibrary(Linker& targetLinker, const std::string& libName)
 		{
 			if (file.is_directory()) continue;
 
-
 			const std::filesystem::path filePath = file;
 			if (std::find(imported.begin(), imported.end(), filePath) != imported.end()) return;
 			imported.push_back(filePath);
@@ -102,6 +101,6 @@ void importLibrary(Linker& targetLinker, const std::string& libName)
 
 void addPath(const std::string& path)
 {
-	const std::filesystem::path _path = path;
+	const std::filesystem::path _path(path);
 	libPaths.push_back(_path);
 }

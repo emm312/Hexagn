@@ -2,6 +2,7 @@
 #define TOKEN_H
 
 #include <string>
+#include <vector>
 
 enum class TokenType: size_t
 {
@@ -70,6 +71,25 @@ struct Token
 	Token(size_t lineno, TokenType type, std::string val, size_t start, size_t end);
 
 	std::string toString() const;
+};
+
+class TokenBuffer
+{
+private:
+	std::vector<Token> m_tokens;
+	size_t m_index = 0;
+
+public:
+	TokenBuffer(const std::vector<Token>& toks);
+
+	bool hasNext() const;
+	void advance();
+	const Token& next();
+	const Token& current() const;
+	const size_t& pos() const;
+
+	void consume(const TokenType& type, const std::string& errorMsg);
+
 };
 
 #endif // TOKEN_H

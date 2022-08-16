@@ -1,9 +1,11 @@
-SOURCES = ${wildcard src/*.cpp src/compiler/*.cpp src/importer/*.cpp}
+_SOURCES = ${wildcard src/*.cpp src/compiler/*.cpp src/compiler/ast/*.cpp src/importer/*.cpp}
+SOURCES = ${filter-out src/compiler/ast/ast-copy.cpp, $(_SOURCES)}
+
 OBJS = ${SOURCES:.cpp=.o}
 
 CXX = g++
 
-CFLAGS = -I./include -O3 -Wall -std=c++20 -g
+CFLAGS = -I./include -O2 -Wall -std=c++20 -g
 
 hexagn: pre-build $(OBJS)
 	$(CXX) $(CFLAGS) obj/*.o -o $@

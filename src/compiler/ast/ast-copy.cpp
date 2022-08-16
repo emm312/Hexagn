@@ -1,4 +1,7 @@
-#include <compiler/parser.h>
+// For reference when we need to copy some code
+
+#include <compiler/ast/ast.h>
+#include <compiler/ast/nodes.h>
 
 #include <iostream>
 #include <vector>
@@ -14,49 +17,41 @@
 #include <compiler/string.h>
 #include <importer/importHelper.h>
 
-class TokenBuffer
+TokenBuffer::TokenBuffer(const std::vector<Token>& tokens)
+	: m_tokens(tokens)
+{}
+
+bool TokenBuffer::hasNext() const
 {
-private:
-	std::vector<Token> m_tokens;
-	size_t m_index = 0;
+	return m_index < m_tokens.size();
+}
 
-public:
-	TokenBuffer(const std::vector<Token>& tokens)
-		: m_tokens(tokens)
-	{}
+void TokenBuffer::advance()
+{
+	m_index++;
+}
 
-	bool hasNext() const
-	{
-		return m_index < m_tokens.size();
-	}
+const Token& TokenBuffer::next()
+{
+	return m_tokens[++m_index];
+}
 
-	void advance()
-	{
-		m_index++;
-	}
+const Token& TokenBuffer::current() const
+{
+	return m_tokens[m_index];
+}
 
-	const Token& next()
-	{
-		return m_tokens[++m_index];
-	}
+const size_t& TokenBuffer::pos() const
+{
+	return m_index;
+}
 
-	const Token& current() const
-	{
-		return m_tokens[m_index];
-	}
-
-	const size_t& pos() const
-	{
-		return m_index;
-	}
-};
-
-void VarStack::push(const std::string name, const Token type)
+void VarStack::push(const std::string& name, const Type& type)
 {
 	if (!m_vars.empty())
-		m_vars.push_back( { name, m_vars[m_vars.size() - 1].stackOffset + 1, type } );
+		m_vars.push_back( { name, type, m_vars[m_vars.size() - 1].stackOffset + 1 } );
 	else
-		m_vars.push_back( { name, 1, type } );
+		m_vars.push_back( { name, type, 1 } );
 
 	frameCounter++;
 }
@@ -90,12 +85,12 @@ const size_t VarStack::getOffset(const std::string& name) const
 	return -1;
 }
 
-const Token VarStack::getType(const std::string& name) const
+const Type VarStack::getType(const std::string& name) const
 {
 	for (const auto& var: m_vars)
 		if (var.name == name)
 			return var.type;
-	return Token(-1, (TokenType) -1, "", -1, -1);
+	return { Token(-1, (TokenType) -1, "", -1, -1), false };
 }
 
 const size_t VarStack::getSize() const
@@ -421,6 +416,95 @@ VarStackFrame parseExpr(const std::vector<Token>& toks, const VarStack& locals, 
 	}
 }
 
+void expressionParser(
+	TokenBuffer& buf,
+	const std::stringstream& codeStream,
+	const bool& semiColonTerminate,
+	const VarStack& locals,
+	const VarStack& funcArgs
+)
+{
+	std::vector<Token> expr;
+
+	{
+		if (semiColonTerminate)
+		{
+			while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
+			{
+				const Token& curr = buf.current();
+
+				if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_OPEN_PAREN && curr.m_type != TokenType::TT_CLOSE_PAREN && curr.m_type != TokenType::TT_STR)
+				{
+					std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer or non-parenthesis tokens at line " << curr.m_lineno << '\n';
+					std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+					drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+					exit(-1);
+				}
+
+				expr.push_back(curr);
+				buf.advance();
+			}
+		}
+		else
+		{
+			size_t closeCount = 0;
+			while (buf.hasNext() && buf.current().m_type != TokenType::TT_CLOSE_PAREN)
+			{
+				const Token& curr = buf.current();
+
+				if (!isNumber(curr) && !isOperator(curr) && curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_OPEN_PAREN && curr.m_type != TokenType::TT_CLOSE_PAREN && curr.m_type != TokenType::TT_STR)
+				{
+					std::cerr << "Error: Expression cannot have non-number or non-operator or non-identifer or non-parenthesis tokens at line " << curr.m_lineno << '\n';
+					std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+					drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+					exit(-1);
+				}
+
+				if (curr.m_type == TokenType::TT_OPEN_PAREN)
+					closeCount++;
+				else if (curr.m_type == TokenType::TT_CLOSE_PAREN)
+				{
+					if (closeCount == 0)
+						break;
+					closeCount--;
+				}
+				expr.push_back(curr);
+				buf.advance();
+			}
+		}
+	};
+
+	// TODO: Expression Validator thing
+	{
+
+	};
+
+	{
+		const auto [val, code] = parseExpr(expr, locals, funcArgs);
+	}
+}
+
+const Type makeType(TokenBuffer& buf)
+{
+	Token baseType = buf.current();
+	buf.advance();
+	if (!buf.hasNext() || (buf.current().m_type != TokenType::TT_IDENTIFIER && buf.current().m_type != TokenType::TT_MULT))
+	{
+		std::cerr << "Error: Expected identifier or `*` after keyword at line " << baseType.m_lineno << '\n';
+		std::cerr << baseType.m_lineno << ": " << getSourceLine(glob_src, baseType.m_lineno);
+		drawArrows(baseType.m_start, baseType.m_end, baseType.m_lineno);
+		exit(-1);
+	}
+
+	if (buf.current().m_type == TokenType::TT_MULT)
+	{
+		buf.advance();
+		return { baseType, true };
+	}
+	else
+		return { baseType, false };
+}
+
 inline const bool isDataType(const Token& tok)
 {
 	return tok.m_type == TokenType::TT_VOID
@@ -446,20 +530,18 @@ size_t ifCount = 0;
 // Global variable to keep track of while statements
 size_t whileCount = 0;
 
-const std::string compile(Linker& linker, const std::vector<Token>& tokens, const bool& debugSymbols, const bool& emitFunctions, const bool& emitEntryPoint, const bool& isSubScope, const bool& popFrame, const VarStack& _locals, const VarStack& funcArgs)
+// actually no this can also return a FunctionNode...
+// what if body of function is another Program thing lol
+// hmmmmmmm
+// parse functions differently???
+// copy paste function and other have function return type???
+// 
+const Program makeAst(Linker& linker, const std::vector<Token>& tokens, const bool& debugSymbols, const bool& emitFunctions, const bool& emitEntryPoint, const bool& isSubScope, const bool& popFrame, const VarStack& _locals, const VarStack& funcArgs)
 {
+	Program prog;
 	TokenBuffer buf(tokens);
-	std::stringstream code;
 	VarStack locals = _locals;
 	locals.startFrame();
-
-	if (emitEntryPoint)
-	{
-		code << "BITS == 32\n";
-		code << "MINHEAP 4096\n";
-		code << "MINSTACK 1024\n";
-		code << "MOV R1 SP\n\n";
-	}
 	
 	while (buf.hasNext())
 	{
@@ -474,10 +556,9 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 			case TokenType::TT_STRING:
 			case TokenType::TT_CHARACTER:
 			{
-				if (debugSymbols)
-					code << "// " << getSourceLine(glob_src, current.m_lineno);
+				const Type type = makeType(buf);
+				const TypeNode typeNode { {}, type.baseType.m_val, type.isPointer }; // the empty {} is an empty Node initialization // oh
 
-				buf.advance();
 				if (!buf.hasNext())
 				{
 					std::cerr << "Error: Expected identifier after keyword at line " << current.m_lineno << '\n';
@@ -486,7 +567,8 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					exit(-1);
 				}
 				Token next = buf.current();
-				const Token& identifier = buf.current();
+				const Token identifier = buf.current();
+				const IdentifierNode identNode { {}, identifier.m_val };
 
 				buf.advance();
 				if (!buf.hasNext() || (buf.current().m_type != TokenType::TT_ASSIGN && buf.current().m_type != TokenType::TT_OPEN_PAREN && buf.current().m_type != TokenType::TT_SEMICOLON))
@@ -536,7 +618,6 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					}
 
 					auto [val, _code] = parseExpr(expr, locals, funcArgs);
-					code << _code;
 
 					if (isIntegerDataType(current))
 					{
@@ -551,9 +632,6 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 						
 						std::stringstream sizeStream;
 						sizeStream << "0x" << std::hex << size;
-
-						code << "AND R2 " << val << ' ' << sizeStream.str() << '\n';
-						code << "PSH R2\n\n";
 					}
 
 					else if (current.m_type == TokenType::TT_STRING)
@@ -570,9 +648,6 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 
 						// Register the string into the string table and get the signature
 						const std::string& signature = registerString(string);
-
-						// Put definition to stacc
-						code << "MOV R2 " << signature << "\nPSH R2\n\n";
 					}
 
 					else if (current.m_type == TokenType::TT_CHARACTER)
@@ -590,17 +665,24 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 							drawArrows(expr[0].m_start, expr[0].m_end, expr[0].m_lineno);
 							exit(-1);
 						}
-
-						code << "PSH R2\n\n";
 					}
 
-					locals.push(identifier.m_val, current);
+					locals.push(identifier.m_val, type);
+
+					if (!buf.hasNext() || buf.current().m_type != TokenType::TT_SEMICOLON)
+					{
+						const Token& tok = expr[expr.size() - 1];
+						std::cerr << "Error: Expected semicolon after expression at line " << tok.m_lineno << '\n';
+						std::cerr << tok.m_lineno << ": " << getSourceLine(glob_src, tok.m_lineno);
+						drawArrows(tok.m_start, tok.m_end, tok.m_lineno);
+						exit(-1);
+					}
 				}
 
 				// Variable declaration
 				else if (next.m_type == TokenType::TT_SEMICOLON)
 				{
-					locals.push(identifier.m_val, current);
+					locals.push(identifier.m_val, type);
 					code << "DEC SP SP";
 				}
 
@@ -615,7 +697,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 						exit(-1);
 					}
 
-					Function func { identifier, current };
+					Function func { identifier, type };
 
 					buf.advance();
 					if (!buf.hasNext() || !(isDataType(buf.current()) || buf.current().m_type == TokenType::TT_CLOSE_PAREN))
@@ -631,12 +713,12 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 					VarStack funcArgsStack;
 					while (buf.hasNext() && buf.current().m_type != TokenType::TT_CLOSE_PAREN)
 					{
-						const Token& type = buf.current();
-						if (!buf.hasNext() || !isDataType(type))
+						const Token& _type = buf.current();
+						if (!buf.hasNext() || !isDataType(_type))
 						{
-							std::cerr << "Error: Expected keyword or ')' at line " << type.m_lineno << '\n';
-							std::cerr << type.m_lineno << ": " << getSourceLine(glob_src, type.m_lineno);
-							drawArrows(type.m_start, type.m_end, type.m_lineno);
+							std::cerr << "Error: Expected keyword or ')' at line " << _type.m_lineno << '\n';
+							std::cerr << _type.m_lineno << ": " << getSourceLine(glob_src, _type.m_lineno);
+							drawArrows(_type.m_start, _type.m_end, _type.m_lineno);
 							exit(-1);
 						}
 
@@ -651,7 +733,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 						next = buf.current();
 						const Token& identifier = buf.current();
 
-						func.argTypes.push_back(type);
+						func.argTypes.push_back(_type);
 						funcArgsStack.push(identifier.m_val, type);
 
 						buf.advance();
@@ -713,6 +795,15 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 
 						body.push_back(buf.current());
 						buf.advance();
+					}
+
+					if (!buf.hasNext() || buf.current().m_type != TokenType::TT_CLOSE_BRACE)
+					{
+						const Token& tok = body[body.size() - 1];
+						std::cerr << "Error: Expected closing '}' after function body at line " << tok.m_lineno << '\n';
+						std::cerr << tok.m_lineno << ": " << getSourceLine(glob_src, tok.m_lineno);
+						drawArrows(tok.m_start, tok.m_end, tok.m_lineno);
+						exit(-1);
 					}
 
 					func.code = compile(linker, body, debugSymbols, false, false, false, true, VarStack(), funcArgsStack);
@@ -794,6 +885,8 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 						code << "LSTR R1 -" << offset << ' ' << val << "\n\n";
 					else
 						code << "LSTR R1 " << offset << ' ' << val << "\n\n";
+					
+					next = expr[expr.size() - 1];
 				}
 
 				// Function call
@@ -837,9 +930,10 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 							argTypes.push_back(val);
 						else
 						{
-							Token type = locals.getType(val.m_val);
+							Token type = locals.getType(val.m_val).baseType;
 							if (type.m_type == (TokenType) -1)
-								type = funcArgs.getType(val.m_val);
+								type = funcArgs.getType(val.m_val).baseType;
+
 							argTypes.push_back(type);
 						}
 
@@ -893,11 +987,23 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 
 					// Stack cleanup
 					code << "ADD SP SP " << args.size() << "\n\n";
+
+					next = buf.current();
+					buf.advance();
+				}
+
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_SEMICOLON)
+				{
+					std::cerr << "Error: Expected `;` after expression or function call at line " << next.m_lineno << '\n';
+					std::cerr << next.m_lineno << ": " << getSourceLine(glob_src, next.m_lineno);
+					drawArrows(next.m_start, next.m_end, next.m_lineno);
+					exit(-1);
 				}
 
 				break;
 			}
 
+			// If statement
 			case TokenType::TT_IF:
 			{
 				if (debugSymbols)
@@ -1022,6 +1128,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				break;
 			}
 
+			// While statement
 			case TokenType::TT_WHILE:
 			{
 				if (debugSymbols)
@@ -1146,6 +1253,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				break;
 			}
 
+			// Imports
 			case TokenType::TT_IMPORT:
 			{
 				std::string libName;
@@ -1193,6 +1301,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				break;
 			}
 
+			// Inline urcl blocks
 			case TokenType::TT_URCL_BLOCK:
 			{
 				if (debugSymbols)
@@ -1222,6 +1331,7 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				break;
 			}
 
+			// Return statement
 			case TokenType::TT_RETURN:
 			{
 				if (debugSymbols)
@@ -1262,6 +1372,54 @@ const std::string compile(Linker& linker, const std::vector<Token>& tokens, cons
 				// cdecl calling convention exit
 				code << "MOV SP R1\nPOP R1\nRET\n\n";
 
+				break;
+			}
+
+			// Dereference pointer and assign to it
+			case TokenType::TT_MULT:
+			{
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_IDENTIFIER)
+				{
+					std::cerr << "Error: Expected identfier after dereference operator at line " << current.m_lineno << '\n';
+					std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+					drawArrows(current.m_start, current.m_end, current.m_lineno);
+					exit(-1);
+				}
+				const Token& identifier = buf.current();
+
+				size_t offset = locals.getOffset(identifier.m_val);
+				bool isInArgs = false;
+				if (offset == size_t(-1))
+				{
+					offset = funcArgs.getOffset(identifier.m_val);
+					isInArgs = true;
+					if (offset == size_t(-1))
+					{
+						std::cerr << "Error: No such variable " << identifier.m_val << " in current context at line " << identifier.m_lineno << '\n';
+						std::cerr << identifier.m_lineno << ": " << getSourceLine(glob_src, identifier.m_lineno);
+						drawArrows(identifier.m_start, identifier.m_end, identifier.m_lineno);
+						exit(-1);
+					}
+				}
+
+				buf.advance();
+				if (!buf.hasNext() || buf.current().m_type != TokenType::TT_ASSIGN)
+				{
+					std::cerr << "Error: Expected '=' after identifier at line " << identifier.m_lineno << '\n';
+					std::cerr << identifier.m_lineno << ": " << getSourceLine(glob_src, identifier.m_lineno);
+					drawArrows(identifier.m_start, identifier.m_end, identifier.m_lineno);
+					exit(-1);
+				}
+
+				
+
+				break;
+			}
+
+			// Sub-scope
+			case TokenType::TT_OPEN_BRACE:
+			{
 				break;
 			}
 

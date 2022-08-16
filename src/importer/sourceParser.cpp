@@ -5,8 +5,8 @@
 #include <sstream>
 
 #include <util.h>
+#include <compiler/ast/ast.h>
 #include <compiler/lexer.h>
-#include <compiler/parser.h>
 #include <compiler/token.h>
 
 const TokenType strToType(const std::string& val);
@@ -89,7 +89,7 @@ void parseURCLSource(Linker& targetLinker, const std::filesystem::path& file)
 					Token(size_t(-1), strToType(toks[j]), toks[j], size_t(-1), size_t(-1))
 				);
 
-			Function func { name, returnType, argTypes };
+			Function func { name, { returnType, false /* Also temporary 'false' constant' */ }, argTypes };
 
 			std::stringstream funcCode;
 			while (i < lines.size() && toks.size() > 0)
@@ -138,24 +138,6 @@ void parseURCLSource(Linker& targetLinker, const std::filesystem::path& file)
 	}
 }
 
-const TokenType strToType(const std::string& val)
-{
-		 if (val == "void")    return TokenType::TT_VOID;
-	else if (val == "int8"
-		  || val == "int16"
-		  || val == "int32"
-		  || val == "int64")   return TokenType::TT_INT;
-	else if (val == "uint8"
-		  || val == "uint16"
-		  || val == "uint32"
-		  || val == "uint64")  return TokenType::TT_UINT;
-	else if (val == "float32"
-		  || val == "float64") return TokenType::TT_FLOAT;
-	else if (val == "string")  return TokenType::TT_STRING;
-	else if (val == "char")    return TokenType::TT_CHARACTER;
-	else                       return (TokenType) -1;
-}
-
 void parseHexagnSource(Linker& targetLinker, const std::filesystem::path& file)
 {
 	// Storing entire source
@@ -193,5 +175,23 @@ void parseHexagnSource(Linker& targetLinker, const std::filesystem::path& file)
 	inputFileStream.close();
 
 	const std::vector<Token>& toks = tokenize(src);
-	compile(targetLinker, toks, false, true, false);
+	// compile(targetLinker, toks, false, true, false);
+}
+
+const TokenType strToType(const std::string& val)
+{
+		 if (val == "void")    return TokenType::TT_VOID;
+	else if (val == "int8"
+		  || val == "int16"
+		  || val == "int32"
+		  || val == "int64")   return TokenType::TT_INT;
+	else if (val == "uint8"
+		  || val == "uint16"
+		  || val == "uint32"
+		  || val == "uint64")  return TokenType::TT_UINT;
+	else if (val == "float32"
+		  || val == "float64") return TokenType::TT_FLOAT;
+	else if (val == "string")  return TokenType::TT_STRING;
+	else if (val == "char")    return TokenType::TT_CHARACTER;
+	else                       return (TokenType) size_t(-1);
 }

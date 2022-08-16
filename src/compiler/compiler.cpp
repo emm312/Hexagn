@@ -8,7 +8,8 @@
 
 #include <util.h>
 #include <compiler/lexer.h>
-#include <compiler/parser.h>
+#include <compiler/ast/ast.h>
+#include <compiler/ast/ast-compiler.h>
 #include <compiler/linker.h>
 
 void compiler(const std::string& inputFileName, const std::string& outputFileName, const bool& debugSymbols, const bool& emitEntryPoint)
@@ -51,5 +52,6 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 	const auto& toks = tokenize(src);
 	// for (const auto& tok: toks)
 	// 	std::cout << tok.toString() + '\n';
-	std::ofstream(outputFileName) << compile(hexagnMainLinker, toks, debugSymbols, true, emitEntryPoint);
+	const Program prog = makeAst(toks);
+	std::ofstream(outputFileName) << compileAst(prog);
 }

@@ -3,9 +3,18 @@
 
 #include <vector>
 
+#include <compiler/ast/ast.h>
 #include <compiler/token.h>
 
-struct Function;
+struct Function
+{
+	const Token name;
+	const Type returnType;
+	std::vector<Token> argTypes;
+	std::string code;
+
+	const std::string getSignature() const;
+};
 
 class Linker
 {

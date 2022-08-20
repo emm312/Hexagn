@@ -1,0 +1,7 @@
+
+import io;
+int8 main() {
+  while (1==1) {
+    println("error");
+  }
+}

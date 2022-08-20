@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 			addPath(argv[index]);
 		}
 
-		else if (val == "-no-main")
+		else if (val == "--no-main")
 			emitEntryPoint = false;
 
 		else

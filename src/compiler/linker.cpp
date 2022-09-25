@@ -12,60 +12,29 @@ struct LenghtEncodedType
 	const std::string val;
 };
 
-const LenghtEncodedType encodeType(const Type& typeName)
+const LenghtEncodedType encodeType(TypeNode* typeName)
 {
-	const Token& type = typeName.baseType;
-	const size_t len = type.m_val.length();
-
+	const std::string type = typeName->val;
+	const size_t len = type.length();
 	std::string ret;
 	bool isIdentifier = false;
 
-	switch (type.m_type)
+		 if (type == "void")   ret = 'v';
+	else if (type == "int8")   ret = "i8";
+	else if (type == "int16")  ret = "i16";
+	else if (type == "int32")  ret = "i32";
+	else if (type == "int64")  ret = "i64";
+	else if (type == "uint8")  ret = "u8";
+	else if (type == "uint16") ret = "u16";
+	else if (type == "uint32") ret = "u32";
+	else if (type == "uint64") ret = "u64";
+	else
 	{
-		case TokenType::TT_VOID: { ret = 'v'; break; }
-		case TokenType::TT_INT:
-		{
-			if (type.m_val == "int8")  ret = "i8";
-			if (type.m_val == "int16") ret = "i16";
-			if (type.m_val == "int32") ret = "i32";
-			if (type.m_val == "int64") ret = "i64";
-
-			break;
-		}
-		case TokenType::TT_UINT:
-		{
-			if (type.m_val == "uint8")  ret = "u8";
-			if (type.m_val == "uint16") ret = "u16";
-			if (type.m_val == "uint32") ret = "u32";
-			if (type.m_val == "uint64") ret = "u64";
-
-			break;
-		}
-		case TokenType::TT_FLOAT:
-		{
-			if (type.m_val == "float32") ret = "f32";
-			if (type.m_val == "float64") ret = "f64";
-
-			break;
-		}
-		case TokenType::TT_STRING:    { ret = 's'; break; }
-		case TokenType::TT_CHARACTER: { ret = 'c'; break; }
-
-		// Is a custom type like a class
-		case TokenType::TT_IDENTIFIER:
-		{
-			isIdentifier = true;
-			ret += type.m_val;
-
-			break;
-		}
-
-		default: {
-			return { 0, "" };
-		}
+		ret = type;
+		isIdentifier = true;
 	}
 
-	if (typeName.isPointer)
+	if (typeName->isPointer)
 		ret += 'P';
 
 	if (!isIdentifier)
@@ -74,11 +43,11 @@ const LenghtEncodedType encodeType(const Type& typeName)
 		return { len, ret };
 }
 
-const std::string Function::getSignature() const
+std::string Function::getSignature() const
 {
 	std::stringstream ss;
 
-	ss << "_Hx" /* Hexagn mangled name signature */ << name.m_val.length() << name.m_val;
+	ss << "_Hx" /* Hexagn mangled name signature */ << name->name.length() << name->name;
 
 	const LenghtEncodedType& _return = encodeType(returnType);
 	if (_return.len == size_t(-1))
@@ -88,7 +57,7 @@ const std::string Function::getSignature() const
 
 	for (const auto& arg: argTypes)
 	{
-		const LenghtEncodedType& var = encodeType({ arg, false /* Temporary 'false' constant */ });
+		const LenghtEncodedType& var = encodeType(arg);
 		if (var.len == size_t(-1))
 			ss << var.val;
 		else
@@ -103,35 +72,35 @@ void Linker::addFunction(const Function& function)
 	// Check for duplicate function
 	for (const auto& func: linkerFunctions)
 	{
-		const Token& retType = func.returnType.baseType;
+		TypeNode* retType = func.returnType;
 
 		if (func.getSignature() == function.getSignature())
 		{
-			std::cerr << "Error: Duplicate function '" << function.name.m_val << "'\n";
-			std::cerr << "Previous definition:\n";
-			std::cerr << retType.m_lineno << ": " << getSourceLine(glob_src, retType.m_lineno);
-			if (func.name.m_lineno != retType.m_lineno)
-			{
-				std::cerr << func.name.m_lineno << ": " << getSourceLine(glob_src, func.name.m_lineno);
-				drawArrows(func.name.m_start, func.name.m_end, func.name.m_lineno);
-			}
-			else
-				drawArrows(retType.m_start, func.name.m_end, retType.m_lineno);
+			std::cerr << "Error: Duplicate function '" << function.name->name << "'\n";
+			// std::cerr << "Previous definition:\n";
+			// std::cerr << retType.m_lineno << ": " << getSourceLine(glob_src, retType.m_lineno);
+			// if (func.name.m_lineno != retType.m_lineno)
+			// {
+			// 	std::cerr << func.name.m_lineno << ": " << getSourceLine(glob_src, func.name.m_lineno);
+			// 	drawArrows(func.name.m_start, func.name.m_end, func.name.m_lineno);
+			// }
+			// else
+			// 	drawArrows(retType.m_start, func.name.m_end, retType.m_lineno);
 			exit(-1);
 		}
 
-		if (func.name.m_val == function.name.m_val && retType.toString() != function.returnType.baseType.toString() && func.argTypes == function.argTypes)
+		if (func.name->name == function.name->name && retType->val != function.returnType->val && func.argTypes == function.argTypes)
 		{
-			std::cerr << "Cannot have functions with same arguments but different return types: " << function.name.m_val << '\n';
-			std::cerr << "Previous definition:\n";
-			std::cerr << retType.m_lineno << ": " << getSourceLine(glob_src, retType.m_lineno);
-			if (func.name.m_lineno != retType.m_lineno)
-			{
-				std::cerr << func.name.m_lineno << ": " << getSourceLine(glob_src, func.name.m_lineno);
-				drawArrows(func.name.m_start, func.name.m_end, func.name.m_lineno);
-			}
-			else
-				drawArrows(retType.m_start, func.name.m_end, func.name.m_lineno);
+			std::cerr << "Cannot have functions with same arguments but different return types: " << function.name->name << '\n';
+			// std::cerr << "Previous definition:\n";
+			// std::cerr << retType.m_lineno << ": " << getSourceLine(glob_src, retType.m_lineno);
+			// if (func.name.m_lineno != retType.m_lineno)
+			// {
+			// 	std::cerr << func.name.m_lineno << ": " << getSourceLine(glob_src, func.name.m_lineno);
+			// 	drawArrows(func.name.m_start, func.name.m_end, func.name.m_lineno);
+			// }
+			// else
+			// 	drawArrows(retType.m_start, func.name.m_end, func.name.m_lineno);
 			exit(-1);
 		}
 	}
@@ -139,27 +108,11 @@ void Linker::addFunction(const Function& function)
 	linkerFunctions.push_back(function);
 }
 
-const std::string getTypeName(const Token& type)
-{
-	switch (type.m_type)
-	{
-		case TokenType::TT_VOID     : return "void";
-		case TokenType::TT_INT      : return type.m_val;
-		case TokenType::TT_UINT     : return type.m_val;
-		case TokenType::TT_NUM      : return "int";
-		case TokenType::TT_FLOAT    : return type.m_val;
-		case TokenType::TT_STRING   : return "string";
-		case TokenType::TT_CHARACTER: return "char";
-
-		default: return "";
-	}
-}
-
-const Function Linker::getFunction(const std::string& src, const Token& name, const std::vector<Token>& argTypes) const
+Function Linker::getFunction(const std::string& src, const std::string& name, const std::vector<TypeNode*>& argTypes) const
 {
 	for (const auto& func: linkerFunctions)
 	{
-		if (func.name.m_val == name.m_val)
+		if (func.name->name == name)
 		{
 			if (func.argTypes.size() != argTypes.size()) break;
 			for (size_t i = 0; i < func.argTypes.size(); ++i)
@@ -171,7 +124,7 @@ const Function Linker::getFunction(const std::string& src, const Token& name, co
 				}
 				else if (isFloatDataType(func.argTypes[i]) && !isFloatDataType(argTypes[i]))
 					goto nextFunc;
-				else if (func.argTypes[i].m_type == TokenType::TT_STRING && argTypes[i].m_type != TokenType::TT_STRING)
+				else if (func.argTypes[i]->val == "string" && argTypes[i]->val != "string")
 					goto nextFunc;
 			}
 
@@ -181,12 +134,10 @@ const Function Linker::getFunction(const std::string& src, const Token& name, co
 		nextFunc:;
 	}
 
-	std::cerr << "Error: Function '" << name.m_val << "' with arguments ";
-	for (const Token& arg: argTypes)
-		std::cerr << getTypeName(arg) << ' ';
-	std::cerr << "does not exist at line " << name.m_lineno << '\n';
-	std::cerr << name.m_lineno << ": " << getSourceLine(src, name.m_lineno);
-	drawArrows(name.m_start, name.m_end, name.m_lineno);
+	std::cerr << "Error: Function '" << name << "' with arguments ";
+	for (const auto& arg: argTypes)
+		std::cerr << arg->val << ' ';
+	std::cerr << "does not exist\n";
 	exit(-1);
 }
 

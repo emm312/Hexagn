@@ -1120,7 +1120,6 @@ const Program makeAst(Linker& linker, const std::vector<Token>& tokens, const bo
 					body.push_back(buf.current());
 					buf.advance();
 				}
-
 				const std::string& outcode = compile(linker, body, debugSymbols, false, false, true, true, locals, funcArgs);
 				code << outcode;
 				code << ".endif" << currIfCount << '\n';

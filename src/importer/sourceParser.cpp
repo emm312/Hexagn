@@ -63,7 +63,7 @@ void parseURCLSource(Linker& targetLinker, const std::filesystem::path& file)
 				exit(-1);
 			}
 
-			const Token name = Token(size_t(-1), TokenType::TT_IDENTIFIER, toks[1], size_t(-1), size_t(-1));
+			IdentifierNode* name = new IdentifierNode(toks[1]);
 
 			do
 			{
@@ -82,14 +82,14 @@ void parseURCLSource(Linker& targetLinker, const std::filesystem::path& file)
 				std::cerr << "Error: @SIGNATURE expects one or more argument(s) (returnType args...) in library file " << file.string() << " at line " << i << '\n';
 				exit(-1);
 			}
-			const Token& returnType = Token(size_t(-1), strToType(toks[1]), toks[1], size_t(-1), size_t(-1));
-			std::vector<Token> argTypes;
+			TypeNode* returnType = new TypeNode(toks[1], false);
+			std::vector<TypeNode*> argTypes;
 			for (size_t j = 2; j < toks.size(); ++j)
 				argTypes.push_back(
-					Token(size_t(-1), strToType(toks[j]), toks[j], size_t(-1), size_t(-1))
+					new TypeNode(toks[j], false)
 				);
 
-			Function func { name, { returnType, false /* Also temporary 'false' constant' */ }, argTypes };
+			Function func { returnType, name, argTypes };
 
 			std::stringstream funcCode;
 			while (i < lines.size() && toks.size() > 0)
@@ -113,16 +113,16 @@ void parseURCLSource(Linker& targetLinker, const std::filesystem::path& file)
 					}
 
 					const Token& name = Token(i, TokenType::TT_IDENTIFIER, toks[1], 6, 6 + toks[1].size());
-					std::vector<Token> args;
+					std::vector<TypeNode*> args;
 					size_t start = name.m_end + 1;
 					for (size_t j = 2; j < toks.size(); ++j)
 					{
 						const std::string& argStr = toks[j];
-						args.push_back(Token(i, strToType(argStr), argStr, start, start + argStr.size()));
+						args.push_back(new TypeNode(argStr, false));
 						start += argStr.size() + 1;
 					}
 
-					const Function& func2 = targetLinker.getFunction(src, name, args);
+					const Function& func2 = targetLinker.getFunction(src, name.m_val, args);
 
 					funcCode << "CAL ." << func2.getSignature() << '\n';
 					funcCode << "ADD SP SP " << args.size() << '\n';

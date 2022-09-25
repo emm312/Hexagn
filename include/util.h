@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <compiler/token.h>
+#include <compiler/ast/nodes.h>
 
 int indexOf(char* arr[], std::string element, int size);
 std::string replace(std::string str, const std::string& from, const std::string& to);
@@ -13,9 +13,9 @@ void drawArrows(size_t start, size_t end, const size_t& lineno);
 size_t find_nth(std::string haystack, const char& needle, const size_t& nth);
 const std::string getSourceLine(const std::string& src, const size_t& line);
 
-const bool isIntegerDataType(const Token& tok);
-const bool isFloatDataType(const Token& tok);
-const bool isNumber(const Token& tok);
+const bool isIntegerDataType(const TypeNode* const type);
+const bool isFloatDataType(const TypeNode* const type);
+const bool isNumber(const TypeNode* const type);
 
 namespace std
 {

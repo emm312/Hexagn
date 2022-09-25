@@ -6,17 +6,32 @@
 
 #include <compiler/token.h>
 
+enum class NodeType: size_t
+{
+	NT_BiOpNode,
+	NT_NumberNode,
+	NT_TypeNode,
+	NT_IdentifierNode,
+	NT_StringNode,
+	NT_WhileNode,
+	NT_IfNode,
+	NT_VarDefineNode,
+	NT_VarAssignNode,
+	NT_FunctionNode,
+	NT_FuncCallNode
+};
+
 struct Node
 {
-	// Needed for a dumb reason
-	virtual bool isNumberNode() const { return false; }
+	NodeType nodeType;
+	virtual ~Node() = default;
 };
 
 struct FunctionNode;
 struct Program
 {
-	std::vector<Node> statements;
-	std::vector<FunctionNode> functions;
+	std::vector<Node*> statements;
+	~Program();
 };
 
 enum class Operation
@@ -30,11 +45,12 @@ enum class Operation
 
 struct BiOpNode: Node
 {
-	Node lhs;
+	Node* lhs;
 	Operation op;
-	Node rhs;
+	Node* rhs;
 
-	BiOpNode(const Node& lhs, const Operation& op, const Node& rhs);
+	BiOpNode(Node* lhs, const Operation& op, Node* rhs);
+	virtual ~BiOpNode();
 };
 
 struct NumberNode: Node
@@ -42,7 +58,7 @@ struct NumberNode: Node
 	size_t val;
 
 	NumberNode(const size_t& val);
-	bool isNumberNode() const { return true; }
+	virtual ~NumberNode() = default;
 };
 
 struct TypeNode: Node
@@ -50,17 +66,16 @@ struct TypeNode: Node
 	std::string val;
 	bool isPointer;
 
-	// Why the default constructor needed?
-	TypeNode() = default;
 	TypeNode(const std::string& val, const bool& ptr);
+	virtual ~TypeNode() = default;
 };
 
 struct IdentifierNode: Node
 {
 	std::string name;
 
-	IdentifierNode() = default;
 	IdentifierNode(const std::string& name);
+	virtual ~IdentifierNode() = default;
 };
 
 struct StringNode: Node
@@ -68,59 +83,73 @@ struct StringNode: Node
 	std::string val;
 
 	StringNode(const std::string& val);
+	virtual ~StringNode() = default;
+};
+
+struct IfNode: Node
+{
+	Node* condition;
+	Program body;
+
+	IfNode(Node* cond, const Program& body);
+	virtual ~IfNode();
 };
 
 struct WhileNode: Node
 {
 	// May be NumberNode or BiOpNode
-	Node condition;
+	Node* condition;
 	Program body;
 
-	WhileNode(const Node& cond, const Program& body);
-};
-
-struct IfNode: Node
-{
-	Node condition;
-	Program body;
-
-	IfNode(const Node& cond, const Program& body);
+	WhileNode(Node* cond, const Program& body);
+	virtual ~WhileNode();
 };
 
 struct VarDefineNode: Node
 {
-	TypeNode type;
-	IdentifierNode ident;
+	TypeNode* type;
+	IdentifierNode* ident;
 
-	// May be NumberNode or BiOpNode
-	Node expr;
+	Node* expr;
 
-	VarDefineNode(const TypeNode& type, const IdentifierNode& ident, const Node& expr);
+	VarDefineNode(TypeNode* type, IdentifierNode* ident, Node* expr);
+	virtual ~VarDefineNode();
 };
 
 struct VarAssignNode: Node
 {
-	IdentifierNode ident;
-	Node expr;
+	IdentifierNode* ident;
+	Node* expr;
 
-	VarAssignNode(const IdentifierNode& ident, const Node& expr);
+	VarAssignNode(IdentifierNode* ident, Node* expr);
+	virtual ~VarAssignNode();
 };
 
 struct FunctionNode: Node
 {
 	struct Argument
 	{
-		TypeNode type;
-		IdentifierNode argName;
+		TypeNode* type;
+		IdentifierNode* argName;
 	};
 
-	TypeNode retType;
-	IdentifierNode name;
+	TypeNode* retType;
+	IdentifierNode* name;
 
 	std::vector<Argument> args;
-	Program body;
+	Program* body;
 
-	FunctionNode(const TypeNode& retType, const IdentifierNode& ident);
+	FunctionNode(TypeNode* retType, IdentifierNode* ident);
+	virtual ~FunctionNode();
+};
+
+struct FuncCallNode: Node
+{
+	IdentifierNode* name;
+	std::vector<Node*> args;
+
+	FuncCallNode(IdentifierNode* name, const std::vector<Node*>& args);
+	virtual ~FuncCallNode();
 };
 
 #endif // NODES_H

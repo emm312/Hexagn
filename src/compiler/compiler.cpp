@@ -49,9 +49,17 @@ void compiler(const std::string& inputFileName, const std::string& outputFileNam
 
 	// We dont need the input file stream anymore, so close it
 	inputFileStream.close();
+
 	const auto& toks = tokenize(src);
 	// for (const auto& tok: toks)
-	// 	std::cout << tok.toString() + '\n';
+	// 	std::cout << tok.toString() << '\n';
+	// std::cout << '\n';
 	const Program prog = makeAst(toks);
-	std::ofstream(outputFileName) << compileAst(prog);
+
+	Arguments args {
+		debugSymbols, // debugSymbols is useless now because ast doesnt keep track of line number and stuff
+		emitEntryPoint,
+		true
+	};
+	std::ofstream(outputFileName) << compileAst(prog, args, hexagnMainLinker);
 }

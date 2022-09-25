@@ -3,17 +3,16 @@
 
 #include <vector>
 
-#include <compiler/ast/ast.h>
-#include <compiler/token.h>
+#include <compiler/ast/nodes.h>
 
 struct Function
 {
-	const Token name;
-	const Type returnType;
-	std::vector<Token> argTypes;
+	TypeNode* returnType;
+	IdentifierNode* name;
+	std::vector<TypeNode*> argTypes;
 	std::string code;
 
-	const std::string getSignature() const;
+	std::string getSignature() const;
 };
 
 class Linker
@@ -23,7 +22,7 @@ private:
 
 public:
 	void addFunction(const Function& function);
-	const Function getFunction(const std::string& src, const Token& name, const std::vector<Token>& argTypes) const;
+	Function getFunction(const std::string& src, const std::string& name, const std::vector<TypeNode*>& argTypes) const;
 	const std::vector<Function>& getFunctions() const;
 
 };

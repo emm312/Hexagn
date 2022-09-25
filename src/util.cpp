@@ -74,25 +74,24 @@ size_t find_nth(std::string haystack, const char& needle, const size_t& nth)
 	return -1;
 }
 
-const bool isIntegerDataType(const Token& tok)
+const bool isIntegerDataType(const TypeNode* const type)
 {
-	return tok.m_type == TokenType::TT_INT || tok.m_type == TokenType::TT_UINT;
+	return type->val.starts_with("int") || type->val.starts_with("uint");
 }
 
-const bool isFloatDataType(const Token& tok)
+const bool isFloatDataType(const TypeNode* const type)
 {
-	return tok.m_type == TokenType::TT_FLOAT;
+	return type->val.starts_with("float");
 }
 
-const bool isNumber(const Token& tok)
+const bool isNumber(const TypeNode* const type)
 {
-	return tok.m_type == TokenType::TT_NUM || tok.m_type == TokenType::TT_FLT;
+	return isdigit(type->val[0]);
 }
 
 const std::string getSourceLine(const std::string& src, const size_t& line)
 {
 	std::string ret;
-	ret += line + ": ";
 	for (size_t i = find_nth(src, '\n', line - 1); src[i] != '\n'; ++i)
 		ret += src[i];
 	ret += '\n';

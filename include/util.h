@@ -20,6 +20,7 @@ const bool isNumber(const TypeNode* const type);
 namespace std
 {
 	string to_string(TokenType tokenType);
+	string to_string(Token token);
 }
 
 #endif // UTIL_H

@@ -143,6 +143,14 @@ FuncCallNode::~FuncCallNode()
 		delete arg;
 }
 
+ImportNode::ImportNode(std::string& library) {
+	this->library = library;
+	this->nodeType = NodeType::NT_ImportNode;
+}
+
+ImportNode::~ImportNode() {
+	// empty for now
+}
 /// ACTUAL AST
 
 TokenBuffer::TokenBuffer(const std::vector<Token>& tokens)
@@ -273,6 +281,7 @@ Node* expressionParser(TokenBuffer& buf)
 			);
 			return node;
 		}
+		return nullptr; // to make warning go away
 	};
 
 	const std::function<Operation(const Token& tok)> tokToOperation = [](const Token& tok) -> Operation
@@ -607,6 +616,7 @@ const Program makeAst(const std::vector<Token>& tokens)
 						}
 					);
 				}
+				break;
 			}
 
 			case TokenType::TT_IF:
@@ -694,6 +704,51 @@ const Program makeAst(const std::vector<Token>& tokens)
 					}
 				);
 
+				break;
+			}
+
+			case TokenType::TT_IMPORT: {
+				std::string libName;
+
+				buf.advance();
+				while (buf.hasNext() && buf.current().m_type != TokenType::TT_SEMICOLON)
+				{
+					Token curr = buf.current();
+					if (curr.m_type != TokenType::TT_IDENTIFIER && curr.m_type != TokenType::TT_URCL_BLOCK /* Since urcl literal becomes a urcl token */)
+					{
+						std::cerr << "Error: Expected module name after import at line " << curr.m_lineno << '\n';
+						std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+						drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+						exit(-1);
+					}
+
+					libName += curr.m_val;
+
+					buf.advance();
+					if (!buf.hasNext())
+					{
+						std::cerr << "Error: Expected '.' after module/submodule name at line " << current.m_lineno << '\n';
+						std::cerr << current.m_lineno << ": " << getSourceLine(glob_src, current.m_lineno);
+						drawArrows(current.m_start, current.m_end, current.m_lineno);
+						exit(-1);
+					}
+					curr = buf.current();
+
+					if (curr.m_type == TokenType::TT_SEMICOLON) break;
+					else if (curr.m_type == TokenType::TT_DOT || curr.m_type == TokenType::TT_COLON)
+						libName += curr.m_val;
+					else
+					{
+						std::cerr << "Error: Expected '.' or ':' or ';' after module/submodule name at line " << curr.m_lineno << '\n';
+						std::cerr << curr.m_lineno << ": " << getSourceLine(glob_src, curr.m_lineno);
+						drawArrows(curr.m_start, curr.m_end, curr.m_lineno);
+						exit(-1);
+					}
+
+					buf.advance();
+				}
+				buf.advance();
+				prog.statements.push_back(new ImportNode { libName });
 				break;
 			}
 

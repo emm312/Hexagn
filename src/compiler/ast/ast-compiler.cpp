@@ -8,6 +8,7 @@
 
 #include <compiler/linker.h>
 #include <compiler/string.h>
+#include <importer/importHelper.h>
 
 bool functionExists(const Program& program, const std::string& name)
 {
@@ -73,6 +74,7 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcArgs, const Linker& linker, FuncCallNode* node);
 void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcArgs, Linker& linker, IfNode* node);
 void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcArgs, Linker& linker, WhileNode* node);
+void visit(std::ostringstream& code, Linker& linker, ImportNode* node);
 
 std::string compileAst(const Program& program, const Arguments& args, Linker& linker, const VarStack& funcArgs)
 {
@@ -111,6 +113,10 @@ std::string compileAst(const Program& program, const Arguments& args, Linker& li
 			}
 			case NodeType::NT_WhileNode: {
 				visit(code, vars, funcArgs, linker, (WhileNode*) statement);
+				break;
+			}
+			case NodeType::NT_ImportNode: {
+				visit(code, linker, (ImportNode*) statement);
 				break;
 			}
 
@@ -438,6 +444,8 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 				funcArgTypes.push_back(type);
 				break;
 			}
+			case NodeType::NT_ImportNode:
+			
 
 			default: break;
 		}
@@ -503,4 +511,9 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 	// no i gotta update a couple of function args
 	// can we still work on cpp hexag together :pleading_face: no this is last commit
 	// liveshare is fun
+}
+
+void visit(std::ostringstream& code, Linker& linker, ImportNode* node) {
+	std::cout << "here\n";
+	importLibrary(linker, node->library);
 }

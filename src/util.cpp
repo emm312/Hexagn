@@ -187,4 +187,12 @@ namespace std
 				return "Unknown";
 		}
 	}
+
+	string to_string(Token token) {
+		stringstream toRet;
+		toRet << to_string(token.m_type) << ": " << token.m_val << '\n';
+		return toRet.str();
+		
+		
+	}
 }

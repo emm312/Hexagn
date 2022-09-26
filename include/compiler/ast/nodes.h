@@ -18,7 +18,8 @@ enum class NodeType: size_t
 	NT_VarDefineNode,
 	NT_VarAssignNode,
 	NT_FunctionNode,
-	NT_FuncCallNode
+	NT_FuncCallNode,
+	NT_ImportNode,
 };
 
 struct Node
@@ -150,6 +151,14 @@ struct FuncCallNode: Node
 
 	FuncCallNode(IdentifierNode* name, const std::vector<Node*>& args);
 	virtual ~FuncCallNode();
+};
+
+struct ImportNode: Node
+{
+	std::string library;
+
+	ImportNode(std::string& library);
+	virtual ~ImportNode();
 };
 
 #endif // NODES_H

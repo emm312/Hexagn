@@ -151,6 +151,15 @@ ImportNode::ImportNode(std::string& library) {
 ImportNode::~ImportNode() {
 	// empty for now
 }
+
+UrclCodeblockNode::UrclCodeblockNode(std::string& code) {
+	this->code = code;
+	this->nodeType = NodeType::NT_UrclCodeblockNode;
+}
+
+UrclCodeblockNode::~UrclCodeblockNode() {
+	// empty for now
+}
 /// ACTUAL AST
 
 TokenBuffer::TokenBuffer(const std::vector<Token>& tokens)
@@ -196,7 +205,7 @@ void TokenBuffer::consume(const TokenType& type, const std::string& errorMsg)
 	advance();
 }
 
-// Function declaration because makeFunctionCall needs it
+// Function declaration because make needs it
 Node* expressionParser(TokenBuffer& buf);
 std::vector<Node*> makeFunctionCall(TokenBuffer& buf)
 {
@@ -747,9 +756,21 @@ const Program makeAst(const std::vector<Token>& tokens)
 
 					buf.advance();
 				}
-				buf.advance();
+				buf.consume(TokenType::TT_SEMICOLON, "Expected ; after import.");
 				prog.statements.push_back(new ImportNode { libName });
 				break;
+			}
+			case TokenType::TT_URCL_BLOCK:
+			{
+				buf.advance();
+				Token tok = buf.current();
+				buf.consume(TokenType::TT_STR, "Expected string after URCL codeblock.");
+				prog.statements.push_back(
+					new UrclCodeblockNode {
+						tok.m_val
+					}
+				);
+				buf.consume(TokenType::TT_SEMICOLON, "Expected ; after URCL codeblock.");
 			}
 
 			case TokenType::TT_SEMICOLON: break;

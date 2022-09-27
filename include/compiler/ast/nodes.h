@@ -20,6 +20,7 @@ enum class NodeType: size_t
 	NT_FunctionNode,
 	NT_FuncCallNode,
 	NT_ImportNode,
+	NT_UrclCodeblockNode,
 };
 
 struct Node
@@ -159,6 +160,13 @@ struct ImportNode: Node
 
 	ImportNode(std::string& library);
 	virtual ~ImportNode();
+};
+
+struct UrclCodeblockNode: Node
+{
+	std::string code;
+	UrclCodeblockNode(std::string& contents);
+	virtual ~UrclCodeblockNode();
 };
 
 #endif // NODES_H

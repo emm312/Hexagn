@@ -75,6 +75,7 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcArgs, Linker& linker, IfNode* node);
 void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcArgs, Linker& linker, WhileNode* node);
 void visit(std::ostringstream& code, Linker& linker, ImportNode* node);
+void visit(std::ostringstream& code, UrclCodeblockNode* node);
 
 std::string compileAst(const Program& program, const Arguments& args, Linker& linker, const VarStack& funcArgs)
 {
@@ -118,6 +119,9 @@ std::string compileAst(const Program& program, const Arguments& args, Linker& li
 			case NodeType::NT_ImportNode: {
 				visit(code, linker, (ImportNode*) statement);
 				break;
+			}
+			case NodeType::NT_UrclCodeblockNode: {
+				visit(code, (UrclCodeblockNode*) statement);
 			}
 
 			default: break;
@@ -428,6 +432,7 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 
 			case NodeType::NT_StringNode:
 			{
+				std::cout << "arg has str node tyep\n";
 				funcArgTypes.push_back(new TypeNode { "string", false });
 			}
 
@@ -444,7 +449,6 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 				funcArgTypes.push_back(type);
 				break;
 			}
-			case NodeType::NT_ImportNode:
 			
 
 			default: break;
@@ -514,6 +518,9 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 }
 
 void visit(std::ostringstream& code, Linker& linker, ImportNode* node) {
-	std::cout << "here\n";
 	importLibrary(linker, node->library);
+}
+
+void visit(std::ostringstream& code, UrclCodeblockNode* node) {
+	code << node->code << '\n';
 }

@@ -3,12 +3,12 @@ SOURCES = ${filter-out src/compiler/ast/ast-copy.cpp, $(_SOURCES)}
 
 OBJS = ${SOURCES:.cpp=.o}
 
-CXX = g++-11
+CXX = g++
 
-CFLAGS = -I./include -O2 -Wall -Wextra -Wpedantic -std=c++20
+CFLAGS = -I./include -O2 -Wall -std=c++20 -g
 
 hexagn: pre-build $(OBJS)
-	$(CXX) -lm $(CFLAGS) obj/*.o -o $@
+	$(CXX) $(CFLAGS) obj/*.o -o $@
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -c $< -o obj/$(notdir $@)

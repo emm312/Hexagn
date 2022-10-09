@@ -280,6 +280,7 @@ Node* expressionParser(TokenBuffer& buf)
 		{
 			buf.advance();
 			return new StringNode { tok.m_val };
+			
 		}
 		else if (tok.m_type == TokenType::TT_OPEN_PAREN)
 		{

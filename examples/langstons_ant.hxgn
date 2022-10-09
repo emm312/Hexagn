@@ -14,6 +14,7 @@ int8 main() {
         getpixel(x, y); // Since returning is not supported, we use a urcl codeblock to load it into a variable.
         urcl "POP R0";
         urcl "PSH R2";
+        urcl
         if (colour == 1) {
             setpixel(x, y, 0);
             direction = (direction + 1) % 4;

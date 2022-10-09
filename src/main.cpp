@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 {
 	if (argc == 1)
 	{
-		std::cerr << "Invalid number of arguments\n" << "Usage: hexagn file.hxgn or hexagn file.hxgn -o file.urcl\n";
+		std::cerr << "Invalid number of arguments\nUsage: hexagn file.hxgn or hexagn file.hxgn -o file.urcl\n";
 		return -1;
 	}
 

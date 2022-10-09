@@ -432,8 +432,8 @@ void visit(std::ostringstream& code, const VarStack& vars, const VarStack& funcA
 
 			case NodeType::NT_StringNode:
 			{
-				std::cout << "arg has str node tyep\n";
 				funcArgTypes.push_back(new TypeNode { "string", false });
+				break;
 			}
 
 			case NodeType::NT_IdentifierNode:

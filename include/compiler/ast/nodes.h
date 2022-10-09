@@ -57,7 +57,7 @@ struct BiOpNode: Node
 
 struct NumberNode: Node
 {
-	size_t val;
+	int val;
 
 	NumberNode(const size_t& val);
 	virtual ~NumberNode() = default;

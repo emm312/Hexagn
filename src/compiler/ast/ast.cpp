@@ -264,7 +264,7 @@ Node* expressionParser(TokenBuffer& buf)
 		if (tok.m_type == TokenType::TT_NUM)
 		{
 			buf.advance();
-			return new NumberNode { std::stoull(tok.m_val) };
+			return new NumberNode { std::stoi(tok.m_val) };
 		}
 		else if (tok.m_type == TokenType::TT_IDENTIFIER)
 		{

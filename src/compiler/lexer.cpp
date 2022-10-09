@@ -130,7 +130,6 @@ std::vector<Token> tokenize(std::string source)
 {
 	char prev;
 	glob_src = source;
-	bool isneg = false;
 
 	std::vector<Token> toks;
 	Buffer buf(source);
@@ -178,12 +177,10 @@ std::vector<Token> tokenize(std::string source)
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
 		else if (data == '-') {
-			if (isdigit(prev))
-				toks.push_back(Token(lineno, TokenType::TT_MINUS, std::string(1, data),
+			
+			toks.push_back(Token(lineno, TokenType::TT_MINUS, std::string(1, data),
 								 buf.pos() - find_nth(source, '\n', lineno - 1),
 								 buf.pos() - find_nth(source, '\n', lineno - 1)));
-			else
-				isneg = true;
 		}
 		else if (data == '*')
 			toks.push_back(Token(lineno, TokenType::TT_MULT, std::string(1, data),
@@ -406,10 +403,7 @@ std::vector<Token> tokenize(std::string source)
 		{
 			
 			std::string word = "";
-			if (isneg) {
-				isneg = false;
-				word += "-";
-			}
+
 			size_t start = buf.pos() - find_nth(source, '\n', lineno - 1);
 			size_t end = start;
 
@@ -427,7 +421,7 @@ std::vector<Token> tokenize(std::string source)
 			}
 
 			toks.push_back(Token(lineno, TokenType::TT_NUM, word, start, end));
-			std::cout << word << '\n';
+
 			continue;
 		}
 

@@ -27,3 +27,4 @@ that the user can access function arguments using the stack pointer, and set/get
 
 - [Website for Hexagn](https://notalternate.github.io/hexagn/home.html)<br>
 - [Documentation](https://notalternate.github.io/hexagn/documentation/main.html)
+- [Discord server](https://discord.gg/HAykWznV)
